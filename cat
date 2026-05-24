@@ -1,0 +1,56 @@
+import re
+
+with open('lib/gemini.ts', 'r') as f:
+    content = f.read()
+
+old_prompt = '''const prompt = `
+You are a smart product search assistant for Hayat Supplies — a medical, dental and infection control supply company in Oman.
+
+A customer searched for: "${query}"
+
+Below is the product catalogue (format: item_code | name | category | brand | pack_size):
+${catalogue}
+
+Instructions:
+- Match products relevant to the search query
+- Consider synonyms, clinical terminology, and related products
+- Examples: "sanitizer" matches hand rub, "sterilizer" matches autoclave, "gloves" matches nitrile or surgical gloves
+- Return ONLY a valid JSON array of matching item_codes
+- Maximum 8 results, ordered by relevance
+- If nothing matches, return []
+
+Response format (JSON array only, no explanation):
+["item_code1", "item_code2"]
+`.trim()'''
+
+new_prompt = '''const prompt = `
+You are a clinical procurement search assistant for Hayat Supplies, a healthcare supply company in Oman.
+
+Customer search query: "${query}"
+
+Product catalogue (item_code | name | category | brand | pack_size):
+${catalogue}
+
+Your job:
+- Find ALL products relevant to the search query
+- Think broadly: "gloves" = nitrile gloves, surgical gloves, examination gloves, latex gloves
+- Think broadly: "infection control" = hand sanitizer, disinfectant, surface wipes, masks, gloves, PPE
+- Think broadly: "dental" = any dental category product
+- Think broadly: "medical devices" = any diagnostic or medical equipment
+- Think broadly: "sterilization" = autoclave, sterilizer, pouches, indicators
+- Match on name, category, brand, and clinical synonyms
+- If query is a category name, return ALL products in that category
+- Return ONLY a valid JSON array of matching item_codes, no explanation
+- Maximum 8 results ordered by relevance
+- If truly nothing matches, return []
+
+JSON array only:
+["item_code1", "item_code2"]
+`.trim()'''
+
+content = content.replace(old_prompt, new_prompt)
+
+with open('lib/gemini.ts', 'w') as f:
+    f.write(content)
+
+print("gemini prompt updated")
