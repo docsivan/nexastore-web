@@ -4,19 +4,19 @@
 
 :root {
   --font-body: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  --color-primary: #003B73;
-  --color-primary-light: #0052A3;
-  --color-primary-dark: #002A54;
-  --color-accent: #4CAF50;
-  --color-accent-dark: #388E3C;
+  --color-primary: #0D0D0D;
+  --color-primary-light: #2D2D2D;
+  --color-primary-dark: #000000;
+  --color-accent: #F5A623;
+  --color-accent-dark: #D4891A;
   --color-slate: #4A4A4A;
   --color-light: #E5E5E5;
   --color-surface: #F7F9FC;
   --color-border: #E0E7EF;
   --color-text: #1A2A3A;
   --color-text-muted: #6B7280;
-  --shadow-card: 0 1px 3px rgba(0,59,115,0.08), 0 4px 12px rgba(0,59,115,0.04);
-  --shadow-card-hover: 0 4px 16px rgba(0,59,115,0.14), 0 8px 24px rgba(0,59,115,0.07);
+  --shadow-card: 0 1px 3px rgba(13,13,13,0.08), 0 4px 12px rgba(13,13,13,0.04);
+  --shadow-card-hover: 0 4px 16px rgba(13,13,13,0.14), 0 8px 24px rgba(13,13,13,0.07);
   --radius-card: 8px;
   --radius-btn: 6px;
 }
@@ -61,7 +61,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Selection */
-::selection { background: rgba(0,59,115,0.12); color: var(--color-primary-dark); }
+::selection { background: rgba(13,13,13,0.12); color: var(--color-primary-dark); }
 
 @layer components {
   .btn-primary {

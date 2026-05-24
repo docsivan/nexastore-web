@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const prompt = `Write a 3-sentence clinical product description for a healthcare procurement platform in Oman. Professional tone. No medical claims. Include pack size and intended use.
+    const prompt = `Write a 3-sentence clinical product description for a global commerce platform. Professional tone. No medical claims. Include pack size and intended use.
 
 Product: ${name}
 Brand: ${brand}

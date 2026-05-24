@@ -16,7 +16,7 @@ export const translations = {
     },
     home: {
       hero_title: 'Professional Healthcare Supplies',
-      hero_subtitle: 'Trusted partner for infection control, dental & medical consumables across the Sultanate of Oman.',
+      hero_subtitle: 'Trusted partner for infection control, dental & medical consumables worldwide.',
       shop_now: 'Shop Now',
       browse_categories: 'Browse Categories',
       featured: 'Featured Products',
@@ -75,7 +75,7 @@ export const translations = {
       track_order: 'Track Order',
     },
     footer: {
-      tagline: 'Your trusted partner for professional healthcare supplies in Oman.',
+      tagline: 'Your trusted partner for professional healthcare supplies globally.',
       quick_links: 'Quick Links',
       categories: 'Categories',
       support: 'Support',
@@ -185,13 +185,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>('en')
 
   useEffect(() => {
-    const saved = localStorage.getItem('hayat_lang') as Language | null
+    const saved = localStorage.getItem('nexa_lang') as Language | null
     if (saved === 'ar' || saved === 'en') setLangState(saved)
   }, [])
 
   const setLang = (l: Language) => {
     setLangState(l)
-    localStorage.setItem('hayat_lang', l)
+    localStorage.setItem('nexa_lang', l)
     document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr')
     document.documentElement.setAttribute('lang', l)
   }

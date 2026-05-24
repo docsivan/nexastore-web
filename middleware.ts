@@ -38,7 +38,7 @@ export function middleware(req: NextRequest) {
 
   // Guard all /admin/* page routes — redirect to /admin/login when no session cookie
   if (pathname.startsWith('/admin/') && !ADMIN_PUBLIC.some(p => pathname.startsWith(p))) {
-    const session = req.cookies.get('hayat_admin_session')?.value ?? ''
+    const session = req.cookies.get('nexa_admin_session')?.value ?? ''
     if (session.length < 30) {
       const url = req.nextUrl.clone()
       url.pathname = '/admin/login'
@@ -53,7 +53,7 @@ export function middleware(req: NextRequest) {
     const rl = checkRateLimit(rlKey(ip,"admin-auth"), RATE_CONFIGS.admin);
     if (!rl.ok) return addSec(new NextResponse(JSON.stringify({error:"Too many attempts"}),{status:429}) as NextResponse);
   }
-  if (pathname.startsWith("/api/chat") || pathname.startsWith("/api/haya")) {
+  if (pathname.startsWith("/api/chat") || pathname.startsWith("/api/nexa")) {
     const rl = checkRateLimit(rlKey(ip,"chat"), RATE_CONFIGS.chat);
     if (!rl.ok) return addSec(new NextResponse(JSON.stringify({error:"Too many requests"}),{status:429}) as NextResponse);
   }

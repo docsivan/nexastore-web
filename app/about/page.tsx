@@ -8,7 +8,7 @@ const MVV = [
   {
     num: '01',
     title: 'Mission',
-    desc: 'Empower every clinic, hospital and dental practice in Oman with world-class medical supplies at competitive prices, backed by deep regulatory expertise.',
+    desc: 'Empower businesses worldwide with world-class medical supplies at competitive prices, backed by AI intelligence.',
   },
   {
     num: '02',
@@ -34,8 +34,8 @@ const EXPERTISE = [
     ),
   },
   {
-    title: 'MOH Registered & Compliant',
-    desc: "All products are registered with Oman's Ministry of Health and fully compliant with local regulations.",
+    title: 'Quality Assured',
+    desc: "All products meet international quality and safety standards.",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6M9 12h6M9 16h4"/>
@@ -54,7 +54,7 @@ const EXPERTISE = [
   },
   {
     title: '100+ CME Lectures Delivered',
-    desc: 'We invest in healthcare education through continuing medical education seminars across Oman.',
+    desc: 'We invest in healthcare education through educational content and expert guides.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <path d="M12 14l-8-4 8-4 8 4-8 4z"/>
@@ -65,7 +65,7 @@ const EXPERTISE = [
   },
   {
     title: 'Digital-First Operations',
-    desc: 'ERP-integrated workflows, B2B ordering portal, and same-day dispatch capabilities across Oman.',
+    desc: 'ERP-integrated workflows, B2B ordering portal, and fast global dispatch capabilities.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <rect x="2" y="3" width="20" height="14" rx="2"/>
@@ -88,7 +88,7 @@ const EXPERTISE = [
 const STATS = [
   { value: '500+', label: 'Products Listed' },
   { value: '200+', label: 'Facilities Served' },
-  { value: '10+',  label: 'Years in Oman' },
+  { value: '10+',  label: 'Years Experience' },
   { value: '25%',  label: 'YoY Growth' },
 ]
 
@@ -117,13 +117,13 @@ export default function AboutPage() {
           </svg>
         </div>
         <div className="relative">
-          <p className="overline-label text-accent-light mb-3">Hayat Supplies — Our Story</p>
+          <p className="overline-label text-accent-light mb-3">NexaStore — Our Story</p>
           <h1 className="font-heading font-bold text-3xl md:text-4xl mb-4 leading-tight text-white">
             10+ Years of Healthcare<br />Procurement Excellence
           </h1>
           <div className="w-10 h-px bg-accent mb-5" />
           <p className="font-body text-white/70 text-sm leading-relaxed max-w-xl">
-            Hayat Supplies was founded with a single mission: to give healthcare professionals in Oman
+            NexaStore was founded with a single mission: to give businesses worldwide
             reliable, certified access to the infection control, dental, and medical consumables they need
             to deliver excellent patient care.
           </p>
@@ -141,7 +141,7 @@ export default function AboutPage() {
             >
               <p
                 className="font-heading font-bold text-5xl leading-none select-none mb-5"
-                style={{ color: 'rgba(0,59,115,0.07)' }}
+                style={{ color: 'rgba(13,13,13,0.07)' }}
               >
                 {item.num}
               </p>

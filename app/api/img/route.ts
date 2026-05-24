@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     .webp({ quality: 72 })
     .toBuffer()
 
-  const filename = `hayat-supplies-${code}-oman.webp`
+  const filename = `nexastore-${code}.webp`
 
   return new Response(new Uint8Array(webp), {
     headers: {

@@ -28,58 +28,40 @@ const CLARITY_ID  = process.env.NEXT_PUBLIC_CLARITY_ID
 const webSiteSchema = {
   '@context': 'https://schema.org',
   '@type':    'WebSite',
-  url:        'https://hayatsupplies.com',
+  url:        'https://nexastore.io',
   potentialAction: {
     '@type':      'SearchAction',
-    target:       'https://hayatsupplies.com/products?q={search_term_string}',
+    target:       'https://nexastore.io/products?q={search_term_string}',
     'query-input': 'required name=search_term_string',
   },
 }
 
-const medicalBusinessSchema = {
-  '@context':    'https://schema.org',
-  '@type':       'MedicalBusiness',
-  name:          'Hayat Supplies',
-  description:   'Professional healthcare and medical supplies for clinics, hospitals, and dental practices in the Sultanate of Oman.',
-  url:           'https://hayatsupplies.com',
-  telephone:     '+968-XXXXXXXX',
-  priceRange:    'OMR',
-  currenciesAccepted: 'OMR',
-  address: {
-    '@type':           'PostalAddress',
-    addressCountry:    'OM',
-    addressLocality:   'Muscat',
-    addressRegion:     'Muscat Governorate',
-  },
-  areaServed: {
-    '@type': 'Country',
-    name:    'Oman',
-  },
-  medicalSpecialty: [
-    'Dentistry',
-    'InfectionControl',
-    'Diagnostics',
-  ],
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type':    'Organization',
+  name:       'NexaStore',
+  description: 'Universal AI commerce platform. Commerce powered by intelligence.',
+  url:        'https://nexastore.io',
 }
 
 export const metadata: Metadata = {
   title: {
-    default: 'Hayat Supplies – Professional Healthcare & Medical Supplies in Oman',
-    template: '%s | Hayat Supplies',
+    default: 'NexaStore – AI Commerce Platform',
+    template: '%s | NexaStore',
   },
   description:
-    'Hayat Supplies is your trusted procurement partner for infection control, dental supplies, PPE, diagnostics and sterilization equipment in the Sultanate of Oman.',
-  keywords: ['medical supplies Oman', 'dental supplies Oman', 'infection control Oman', 'PPE Oman', 'healthcare procurement Muscat'],
+    'NexaStore is a universal AI commerce platform. Commerce powered by intelligence — fast global delivery, AI-driven search, and smart procurement.',
+  keywords: ['AI commerce', 'ecommerce platform', 'AI shopping', 'smart procurement', 'NexaStore'],
   openGraph: {
-    title: 'Hayat Supplies – Professional Healthcare Supplies in Oman',
-    description: 'Infection control, dental, PPE, diagnostics and sterilization equipment. ISO 13485 certified. MOH compliant.',
-    url: 'https://hayatsupplies.com',
-    siteName: 'Hayat Supplies',
-    locale: 'en_OM',
+    title: 'NexaStore – AI Commerce Platform',
+    description: 'Commerce. Powered by Intelligence.',
+    url: 'https://nexastore.io',
+    siteName: 'NexaStore',
+    locale: 'en_US',
     type: 'website',
   },
   robots: { index: true, follow: true },
-  themeColor: '#003B73',
+  themeColor: '#0D0D0D',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -89,8 +71,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="website-schema" type="application/ld+json" strategy="beforeInteractive">
           {JSON.stringify(webSiteSchema)}
         </Script>
-        <Script id="medical-business-schema" type="application/ld+json" strategy="beforeInteractive">
-          {JSON.stringify(medicalBusinessSchema)}
+        <Script id="organization-schema" type="application/ld+json" strategy="beforeInteractive">
+          {JSON.stringify(organizationSchema)}
         </Script>
         {GA_ID && (
           <>

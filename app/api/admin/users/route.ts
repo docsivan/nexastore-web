@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   try {
     await sendMail({
       to: email,
-      subject: 'Welcome to Hayat Supplies Admin',
+      subject: 'Welcome to NexaStore Admin',
       html: welcomeEmailHtml(name, email, tempPassword),
     })
   } catch (e) {

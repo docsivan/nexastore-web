@@ -127,7 +127,7 @@ function AuthScreen({ onAuth }: { onAuth: (pin: string) => void }) {
     <main className="min-h-screen bg-surface flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="font-heading font-bold text-2xl text-primary">Hayat Supplies</Link>
+          <Link href="/" className="font-heading font-bold text-2xl text-primary">NexaStore</Link>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-body font-semibold px-3 py-1.5 rounded-full mt-3 mx-auto block">
             Mission Control
           </div>
@@ -353,7 +353,7 @@ function Dashboard({ pin }: { pin: string }) {
       <div className="bg-primary text-white sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="font-heading font-bold text-lg text-white hover:text-white/90">Hayat Supplies</Link>
+            <Link href="/" className="font-heading font-bold text-lg text-white hover:text-white/90">NexaStore</Link>
             <span className="text-white/40">·</span>
             <span className="text-white/80 text-sm font-body">Mission Control</span>
           </div>
@@ -716,7 +716,7 @@ function Dashboard({ pin }: { pin: string }) {
               <KPI label="Citations Found"    value={geo.citations.filter(c => c.cited).length + ' / ' + geo.citations.length} />
             </div>
 
-            <Panel title="Brand Citation Audit (Google Oman)">
+            <Panel title="Brand Citation Audit">
               {geo.citations.length === 0
                 ? <p className="text-sm font-body text-slate-muted">No citations recorded. Run the citations cron or trigger below.</p>
                 : (
@@ -765,9 +765,9 @@ function Dashboard({ pin }: { pin: string }) {
             <Panel title="Trigger GEO Crons">
               <div className="flex flex-wrap gap-3">
                 {[
-                  { label: '▶ Run Citations Check',  endpoint: '/api/haya/citations' },
-                  { label: '▶ Run Arabic Translate',  endpoint: '/api/haya/translate' },
-                  { label: '▶ Write Content',         endpoint: '/api/haya/content'   },
+                  { label: '▶ Run Citations Check',  endpoint: '/api/nexa/citations' },
+                  { label: '▶ Run Arabic Translate',  endpoint: '/api/nexa/translate' },
+                  { label: '▶ Write Content',         endpoint: '/api/nexa/content'   },
                 ].map(btn => (
                   <button key={btn.endpoint}
                     disabled={!!triggerBusy[btn.endpoint]}

@@ -49,29 +49,29 @@ export async function GET(
 <title>Invoice ${f.order_id}</title>
 <style>
   body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; margin: 0; padding: 40px; background: #fff; }
-  .header { background: #003B73; color: white; padding: 24px 32px; border-radius: 8px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
+  .header { background: #0D0D0D; color: white; padding: 24px 32px; border-radius: 8px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
   .header h1 { margin: 0; font-size: 24px; }
-  .header .badge { background: #4CAF50; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .header .badge { background: #F5A623; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
   .meta-box { background: #f7f9fc; border-radius: 8px; padding: 16px; }
   .meta-box h3 { margin: 0 0 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
   .meta-box p { margin: 2px 0; font-size: 13px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-  thead { background: #003B73; color: white; }
+  thead { background: #0D0D0D; color: white; }
   th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; }
   td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
   tr:last-child td { border-bottom: none; }
   .totals { margin-left: auto; width: 280px; }
   .totals tr td { border: none; padding: 4px 8px; }
-  .totals .grand td { font-weight: 700; font-size: 15px; color: #003B73; border-top: 2px solid #003B73; padding-top: 8px; }
+  .totals .grand td { font-weight: 700; font-size: 15px; color: #0D0D0D; border-top: 2px solid #0D0D0D; padding-top: 8px; }
   .footer { text-align: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="header">
   <div>
-    <h1>Hayat Supplies LLC</h1>
-    <p style="margin:4px 0 0;opacity:.8;font-size:13px">Healthcare Procurement · Sultanate of Oman</p>
+    <h1>NexaStore</h1>
+    <p style="margin:4px 0 0;opacity:.8;font-size:13px">AI Commerce Platform</p>
   </div>
   <div>
     <p style="margin:0;font-size:20px;font-weight:700">INVOICE</p>
@@ -128,7 +128,7 @@ export async function GET(
 </table>
 
 <div class="footer">
-  <p>Thank you for choosing Hayat Supplies! For queries: info@hayatsupplies.com | +968 97780725</p>
+  <p>Thank you for choosing NexaStore! For queries: info@nexastore.io | +968 97780725</p>
   <p>ISO 13485:2016 Certified · MOH Oman Registered · CE Marked</p>
 </div>
 </body>

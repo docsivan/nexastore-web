@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const content = await getContentBySlug(params.slug)
   if (!content || content.status !== 'published') return { title: 'Comparison Not Found' }
   return {
-    title:       content.meta_title || `${content.title} | Hayat Supplies`,
+    title:       content.meta_title || `${content.title} | NexaStore`,
     description: content.meta_description,
     keywords:    content.keywords,
   }
@@ -25,7 +25,7 @@ export default async function ComparePage({ params }: Props) {
   if (!content || content.status !== 'published') notFound()
 
   const related      = await getPublishedByCategory(content.category, params.slug)
-  const siteDomain   = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'hayatsupplies.com'
+  const siteDomain   = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'nexastore.io'
 
   const articleSchema = content.article_schema
     ? JSON.parse(content.article_schema)
@@ -34,8 +34,8 @@ export default async function ComparePage({ params }: Props) {
         '@type':       'Article',
         headline:      content.title,
         description:   content.meta_description,
-        author:        { '@type': 'Organization', name: 'Hayat Supplies' },
-        publisher:     { '@type': 'Organization', name: 'Hayat Supplies', url: `https://${siteDomain}` },
+        author:        { '@type': 'Organization', name: 'NexaStore' },
+        publisher:     { '@type': 'Organization', name: 'NexaStore', url: `https://${siteDomain}` },
         datePublished: content.published_at || new Date().toISOString(),
         dateModified:  content.last_updated  || new Date().toISOString(),
       }

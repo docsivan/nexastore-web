@@ -47,14 +47,14 @@ export default function ChatPage() {
       <div className="px-6 py-5 border-b border-gray-200 bg-white flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg"
-            style={{ background: '#003B73' }}>
+            style={{ background: '#0D0D0D' }}>
             H
           </div>
           <div>
-            <h1 className="font-bold text-gray-900 text-lg">Hayat Assistant</h1>
+            <h1 className="font-bold text-gray-900 text-lg">Nexa Assistant</h1>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-400"></div>
-              <span className="text-sm text-gray-500">AI Procurement Advisor — Hayat Supplies Oman</span>
+              <span className="text-sm text-gray-500">AI Procurement Advisor — NexaStore</span>
             </div>
           </div>
         </div>
@@ -78,8 +78,8 @@ export default function ChatPage() {
                   key={p.label}
                   onClick={() => sendMessage(p.text)}
                   className="text-left px-4 py-3 rounded-xl border bg-white hover:shadow-md transition-all text-sm font-medium"
-                  style={{ borderColor: '#e2e8f0', color: '#003B73' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#003B73')}
+                  style={{ borderColor: '#e2e8f0', color: '#0D0D0D' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#0D0D0D')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
                   {p.label}
                 </button>
@@ -94,7 +94,7 @@ export default function ChatPage() {
 
             {msg.role === 'assistant' && (
               <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-1"
-                style={{ background: '#003B73' }}>
+                style={{ background: '#0D0D0D' }}>
                 H
               </div>
             )}
@@ -104,7 +104,7 @@ export default function ChatPage() {
                 ? 'text-white rounded-br-sm'
                 : 'bg-white text-gray-800 rounded-bl-sm shadow-sm border border-gray-100'
             }`}
-              style={msg.role === 'user' ? { background: '#003B73' } : {}}>
+              style={msg.role === 'user' ? { background: '#0D0D0D' } : {}}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
               <div className="mt-2 flex items-center justify-between gap-4">
                 <span className="text-xs opacity-40">
@@ -129,7 +129,7 @@ export default function ChatPage() {
         {isLoading && (
           <div className="flex gap-3 justify-start">
             <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"
-              style={{ background: '#003B73' }}>
+              style={{ background: '#0D0D0D' }}>
               H
             </div>
             <div className="bg-white border border-gray-100 shadow-sm px-4 py-3 rounded-2xl rounded-bl-sm">
@@ -162,7 +162,7 @@ export default function ChatPage() {
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             className="w-11 h-11 rounded-full flex items-center justify-center text-white transition-all hover:scale-105 disabled:opacity-40 disabled:scale-100"
-            style={{ background: '#4CAF50' }}>
+            style={{ background: '#F5A623' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -170,7 +170,7 @@ export default function ChatPage() {
           </button>
         </div>
         <p className="text-center text-xs text-gray-400 mt-2">
-          Hayat Assistant · Powered by AI · For procurement guidance only
+          Nexa Assistant · Powered by AI · For procurement guidance only
         </p>
       </div>
     </div>

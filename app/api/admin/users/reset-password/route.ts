@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     await sendMail({
       to: email,
-      subject: 'Hayat Supplies Admin — Password Reset',
+      subject: 'NexaStore Admin — Password Reset',
       html: welcomeEmailHtml(user.name, email, tempPassword),
     })
   } catch (e) {

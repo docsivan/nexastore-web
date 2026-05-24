@@ -8,10 +8,10 @@ const STORY = {
     headline: "Healthcare in Oman deserves a better way to procure.",
     body: [
       "Every clinic manager, procurement officer, and dental practitioner in Oman knows the frustration — hours on the phone chasing stock, waiting days for a supplier to respond, never quite sure if the product meets the standard your facility requires.",
-      "We built Hayat Supplies to solve exactly that. A single platform where every medical, dental, infection control, PPE, and sterilization supply you need is certified, in stock, and delivered the same day in Muscat.",
-      "Hayat — life — because what we supply supports the work that saves it. We are building this for the healthcare community of Oman, and we are almost ready.",
+      "We built NexaStore to solve exactly that. A single platform where every medical, dental, infection control, PPE, and sterilization supply you need is certified, in stock, and delivered the same day in Muscat.",
+      "Nexa — life — because what we supply supports the work that saves it. We are building this for the healthcare community of Oman, and we are almost ready.",
     ],
-    signature: "The Hayat Supplies Team",
+    signature: "The NexaStore Team",
     signatureRole: "Sultanate of Oman · Infection Control · Dental · MOH Compliant",
   },
   ar: {
@@ -34,11 +34,11 @@ const TRUST = {
 
 const FAQ = {
   en: [
-    { q: "What is Hayat Supplies?", a: "Hayat Supplies is Oman's first AI-powered healthcare procurement platform, serving clinics, hospitals, dental practices and healthcare facilities across the Sultanate with medical, dental, infection control, PPE, sterilization and diagnostic supplies — all ISO 13485 certified and MOH Oman compliant." },
-    { q: "Who is Hayat Supplies built for?", a: "Built for procurement officers, clinic managers, dentists, doctors, and healthcare facility operators across Oman who need a reliable, fast, and MOH-compliant supply channel." },
-    { q: "When does Hayat Supplies launch?", a: "We are in final development. Register your details to receive exclusive early access before the public launch." },
-    { q: "What products will Hayat Supplies carry?", a: "Infection control products, dental supplies, PPE, sterilization equipment, diagnostics, and medical devices — all sourced from globally certified manufacturers and compliant with MOH Oman, CE, ASTM, and ISO standards." },
-    { q: "Is Hayat Supplies available outside Muscat?", a: "Our primary launch covers Muscat Governorate with same-day delivery. Expansion across all governorates of the Sultanate follows shortly after launch." },
+    { q: "What is NexaStore?", a: "NexaStore is Oman's first AI-powered healthcare procurement platform, serving clinics, hospitals, dental practices and healthcare facilities across the Sultanate with medical, dental, infection control, PPE, sterilization and diagnostic supplies — all ISO 13485 certified and MOH Oman compliant." },
+    { q: "Who is NexaStore built for?", a: "Built for procurement officers, clinic managers, dentists, doctors, and healthcare facility operators across Oman who need a reliable, fast, and MOH-compliant supply channel." },
+    { q: "When does NexaStore launch?", a: "We are in final development. Register your details to receive exclusive early access before the public launch." },
+    { q: "What products will NexaStore carry?", a: "Infection control products, dental supplies, PPE, sterilization equipment, diagnostics, and medical devices — all sourced from globally certified manufacturers and compliant with MOH Oman, CE, ASTM, and ISO standards." },
+    { q: "Is NexaStore available outside Muscat?", a: "Our primary launch covers Muscat Governorate with same-day delivery. Expansion across all governorates of the Sultanate follows shortly after launch." },
     { q: "How do I get early access?", a: "Enter your email and phone number on this page. Early registrants receive priority onboarding, first-order benefits, and personal notification before the public launch." },
   ],
   ar: [
@@ -114,26 +114,26 @@ export default function ComingSoon() {
         .logo { display: flex; align-items: center; gap: 10px; }
         .logo-icon { width: 34px; height: 34px; background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
         .logo-name { font-family: 'Playfair Display', Georgia, serif; font-size: 19px; font-weight: 700; color: #fff; }
-        .logo-name span { color: #4CAF50; }
+        .logo-name span { color: #F5A623; }
         .lang-toggle { display: flex; gap: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px; }
         .lang-btn { padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; letter-spacing: 0.5px; }
-        .lang-btn.active { background: #4CAF50; color: #fff; }
+        .lang-btn.active { background: #F5A623; color: #fff; }
         .lang-btn:not(.active) { background: transparent; color: rgba(255,255,255,0.4); }
         .lang-btn:not(.active):hover { color: rgba(255,255,255,0.7); }
 
         .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 120px 24px 80px; text-align: center; }
         .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(76,175,80,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(76,175,80,0.04) 1px, transparent 1px); background-size: 52px 52px; pointer-events: none; }
-        .hero-radial { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,59,115,0.4) 0%, transparent 70%); pointer-events: none; }
+        .hero-radial { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(13,13,13,0.4) 0%, transparent 70%); pointer-events: none; }
         .cross { position: absolute; pointer-events: none; opacity: 0.07; }
-        .cross::before, .cross::after { content: ''; position: absolute; background: #4CAF50; }
+        .cross::before, .cross::after { content: ''; position: absolute; background: #F5A623; }
         .cross::before { width: 2px; height: 24px; top: 0; left: 11px; }
         .cross::after { width: 24px; height: 2px; top: 11px; left: 0; }
         .hero-content { position: relative; z-index: 2; max-width: 720px; }
-        .eyebrow { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: #4CAF50; font-weight: 500; margin-bottom: 24px; }
+        .eyebrow { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: #F5A623; font-weight: 500; margin-bottom: 24px; }
         .ar .eyebrow { letter-spacing: 2px; }
         .hero-headline { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(38px, 6vw, 68px); font-weight: 600; line-height: 1.12; color: #fff; margin-bottom: 24px; }
         .ar .hero-headline { font-family: 'Noto Sans Arabic', serif; font-size: clamp(34px, 5.5vw, 58px); line-height: 1.4; font-weight: 600; }
-        .hero-headline em { font-style: italic; color: #4CAF50; }
+        .hero-headline em { font-style: italic; color: #F5A623; }
         .hero-sub { font-size: 16px; color: rgba(255,255,255,0.70); line-height: 1.8; max-width: 500px; margin: 0 auto 48px; font-weight: 300; }
 
         .form-wrap { width: 100%; max-width: 500px; margin: 0 auto; }
@@ -146,7 +146,7 @@ export default function ComingSoon() {
         .form-row input::placeholder { color: rgba(255,255,255,0.50); }
         .form-icon { color: rgba(255,255,255,0.2); font-size: 15px; margin-right: 10px; flex-shrink: 0; }
         .ar .form-icon { margin-right: 0; margin-left: 10px; }
-        .form-submit { width: 100%; background: #4CAF50; color: #fff; border: none; border-radius: 12px; padding: 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; letter-spacing: 0.3px; transition: background 0.2s, transform 0.1s; margin-top: 4px; }
+        .form-submit { width: 100%; background: #F5A623; color: #fff; border: none; border-radius: 12px; padding: 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; letter-spacing: 0.3px; transition: background 0.2s, transform 0.1s; margin-top: 4px; }
         .ar .form-submit { font-family: 'Noto Sans Arabic', serif; }
         .form-submit:hover { background: #43a047; }
         .form-submit:active { transform: scale(0.98); }
@@ -154,7 +154,7 @@ export default function ComingSoon() {
         .form-note { font-size: 11px; color: rgba(255,255,255,0.2); text-align: center; margin-top: 12px; line-height: 1.6; }
         .form-error { color: #ff8a80; font-size: 12px; margin-top: 10px; text-align: center; }
         .success-box { padding: 24px 28px; background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.2); border-radius: 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .success-check { width: 48px; height: 48px; background: rgba(76,175,80,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #4CAF50; font-size: 22px; }
+        .success-check { width: 48px; height: 48px; background: rgba(76,175,80,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #F5A623; font-size: 22px; }
         .success-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #fff; }
         .ar .success-title { font-family: 'Noto Sans Arabic', serif; }
         .success-sub { font-size: 13px; color: rgba(255,255,255,0.62); text-align: center; line-height: 1.65; max-width: 320px; }
@@ -162,11 +162,11 @@ export default function ComingSoon() {
         .trust-strip { border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 18px 0; overflow: hidden; white-space: nowrap; }
         .trust-track { display: inline-flex; gap: 40px; animation: scroll 24s linear infinite; }
         .trust-item { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.55); letter-spacing: 0.5px; white-space: nowrap; }
-        .trust-dot { color: #4CAF50; font-size: 7px; }
+        .trust-dot { color: #F5A623; font-size: 7px; }
         @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
         .section { max-width: 720px; margin: 0 auto; padding: 96px 24px; }
-        .section-label { font-size: 10px; letter-spacing: 5px; text-transform: uppercase; color: #4CAF50; font-weight: 500; margin-bottom: 20px; }
+        .section-label { font-size: 10px; letter-spacing: 5px; text-transform: uppercase; color: #F5A623; font-weight: 500; margin-bottom: 20px; }
         .ar .section-label { letter-spacing: 1px; }
         .story-headline { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(26px, 4vw, 40px); font-weight: 600; color: #fff; line-height: 1.28; margin-bottom: 36px; }
         .ar .story-headline { font-family: 'Noto Sans Arabic', serif; }
@@ -186,7 +186,7 @@ export default function ComingSoon() {
         .faq-item:last-child { border-bottom: 1px solid rgba(255,255,255,0.07); }
         .faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 20px 0; cursor: pointer; background: transparent; border: none; color: rgba(255,255,255,0.85); font-family: 'Inter', system-ui, sans-serif; font-size: 15px; font-weight: 400; gap: 16px; }
         .ar .faq-q { font-family: 'Noto Sans Arabic', serif; text-align: right; }
-        .faq-icon { color: #4CAF50; font-size: 20px; flex-shrink: 0; transition: transform 0.2s; line-height: 1; }
+        .faq-icon { color: #F5A623; font-size: 20px; flex-shrink: 0; transition: transform 0.2s; line-height: 1; }
         .faq-icon.open { transform: rotate(45deg); }
         .faq-a { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.85; padding-bottom: 20px; font-weight: 300; }
         .ar .faq-a { font-family: 'Noto Sans Arabic', serif; font-size: 15px; line-height: 2.0; }
@@ -209,10 +209,10 @@ export default function ComingSoon() {
           <div className="logo">
             <div className="logo-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2v12M2 8h12" stroke="#4CAF50" strokeWidth="2.5" strokeLinecap="round"/>
+                <path d="M8 2v12M2 8h12" stroke="#F5A623" strokeWidth="2.5" strokeLinecap="round"/>
               </svg>
             </div>
-            <span className="logo-name">Hayat <span>Supplies</span></span>
+            <span className="logo-name">Nexa <span>Supplies</span></span>
           </div>
           <div className="lang-toggle">
             <button className={`lang-btn${!isAr ? " active" : ""}`} onClick={() => setLang("en")}>EN</button>
@@ -351,10 +351,10 @@ export default function ComingSoon() {
 
         <footer className="footer">
           <div className="footer-left">
-            {isAr ? "© 2025 حياة سبلايز · سلطنة عُمان" : "© 2025 Hayat Supplies · Sultanate of Oman"}
+            {isAr ? "© 2025 حياة سبلايز · سلطنة عُمان" : "© 2025 NexaStore · Sultanate of Oman"}
           </div>
           <div className="footer-right">
-            <a href="mailto:hello@hayatsupplies.com" className="footer-link">hello@hayatsupplies.com</a>
+            <a href="mailto:hello@nexastore.io" className="footer-link">hello@nexastore.io</a>
             <a href="/privacy" className="footer-link">{isAr ? "الخصوصية" : "Privacy"}</a>
           </div>
         </footer>

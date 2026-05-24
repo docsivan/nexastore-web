@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <div className="bg-primary text-white">
         <div className="max-w-4xl mx-auto px-4 py-5 flex items-center justify-between">
           <div>
-            <Link href="/" className="font-heading font-bold text-xl text-white hover:text-white/90">Hayat Supplies</Link>
+            <Link href="/" className="font-heading font-bold text-xl text-white hover:text-white/90">NexaStore</Link>
             <p className="text-white/60 text-xs font-body mt-0.5">My Account</p>
           </div>
           <div className="flex items-center gap-4">

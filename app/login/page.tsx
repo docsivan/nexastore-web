@@ -117,7 +117,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
 
         <div className="text-center mb-8">
-          <Link href="/" className="font-heading font-bold text-2xl text-primary">Hayat Supplies</Link>
+          <Link href="/" className="font-heading font-bold text-2xl text-primary">NexaStore</Link>
           {loginTab === 'otp' && (
             <div className="flex items-center justify-center gap-2 mt-4">
               <div className={`w-8 h-8 rounded-[3px] flex items-center justify-center text-sm font-heading font-bold ${step === 'phone' ? 'bg-primary text-white' : 'bg-accent text-white'}`}>
@@ -137,13 +137,13 @@ export default function LoginPage() {
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setLoginTab('otp')}
-              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-colors ${loginTab === 'otp' ? 'bg-[#003B73] text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-colors ${loginTab === 'otp' ? 'bg-[#0D0D0D] text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
             >
               OTP Login
             </button>
             <button
               onClick={() => setLoginTab('password')}
-              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-colors ${loginTab === 'password' ? 'bg-[#003B73] text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-colors ${loginTab === 'password' ? 'bg-[#0D0D0D] text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
             >
               Password Login
             </button>

@@ -7,10 +7,10 @@ import NewArrivals from '@/components/home/NewArrivals'
 import HighestDiscounts from '@/components/home/HighestDiscounts'
 import FastMoving from '@/components/home/FastMoving'
 import ComplianceStrip from '@/components/home/ComplianceStrip'
-import HayaCTA from '@/components/home/HayaCTA'
+import NexaCTA from '@/components/home/NexaCTA'
 
 export const metadata: Metadata = {
-  title: 'Hayat Supplies – Professional Healthcare Supplies in Oman',
+  title: 'NexaStore – AI Commerce Platform',
 }
 
 export default function HomePage() {
@@ -40,8 +40,8 @@ export default function HomePage() {
       {/* Section 9 — Compliance Strip */}
       <ComplianceStrip />
 
-      {/* Section 10 — Haya Chat CTA */}
-      <HayaCTA />
+      {/* Section 10 — Nexa Chat CTA */}
+      <NexaCTA />
     </>
   )
 }

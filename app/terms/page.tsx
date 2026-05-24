@@ -14,19 +14,19 @@ export default function TermsPage() {
         {[
           {
             title: '1. Acceptance of Terms',
-            body: 'By accessing and using hayatsupplies.com, you accept and agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our website. These terms apply to all users, including browsers, customers, vendors, and content contributors.',
+            body: 'By accessing and using nexastore.io, you accept and agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our website. These terms apply to all users, including browsers, customers, vendors, and content contributors.',
           },
           {
             title: '2. Products and Pricing',
-            body: 'All prices are displayed in Omani Rial (OMR) and are exclusive of 5% VAT unless otherwise stated. Prices are subject to change without notice. We reserve the right to limit quantities, discontinue products, and modify product specifications at any time.',
+            body: 'All prices are displayed in USD and are inclusive of applicable taxes. Prices are subject to change without notice. We reserve the right to limit quantities, discontinue products, and modify product specifications at any time.',
           },
           {
             title: '3. Orders and Payment',
-            body: 'Orders are subject to acceptance and product availability. We reserve the right to refuse or cancel any order. Payment must be received in full before dispatch. We accept Visa, Mastercard, and other payment methods supported by PayTabs. All transactions are processed in OMR.',
+            body: 'Orders are subject to acceptance and product availability. We reserve the right to refuse or cancel any order. Payment must be received in full before dispatch. We accept Visa, Mastercard, and other payment methods supported by PayTabs. All transactions are processed securely.',
           },
           {
             title: '4. Shipping and Delivery',
-            body: 'Delivery is available within the Sultanate of Oman only. Orders placed before 1:00 PM (Sunday–Thursday) are dispatched same day within Muscat. Delivery to other governorates may take 2–3 business days. Free delivery applies to orders over OMR 50 within Muscat.',
+            body: 'Orders placed before 1:00 PM (Sunday–Thursday) are dispatched same day within Muscat. Delivery to other governorates may take 2–3 business days. Free delivery may apply for qualifying orders.',
           },
           {
             title: '5. Returns and Refunds',
@@ -34,15 +34,15 @@ export default function TermsPage() {
           },
           {
             title: '6. Product Use and Medical Disclaimer',
-            body: 'Products sold by Hayat Supplies are intended for use by qualified healthcare professionals. We do not provide medical advice. Product descriptions are for reference only. Always consult relevant clinical guidelines and manufacturer instructions before use. Hayat Supplies is not liable for outcomes arising from product misuse.',
+            body: 'Products sold by NexaStore are intended for use by qualified healthcare professionals. We do not provide medical advice. Product descriptions are for reference only. Always consult relevant clinical guidelines and manufacturer instructions before use. NexaStore is not liable for outcomes arising from product misuse.',
           },
           {
             title: '7. Intellectual Property',
-            body: 'All content on this website, including text, graphics, logos, and images, is the property of Hayat Supplies LLC or its content suppliers and is protected by intellectual property laws. Unauthorised use is strictly prohibited.',
+            body: 'All content on this website, including text, graphics, logos, and images, is the property of NexaStore or its content suppliers and is protected by intellectual property laws. Unauthorised use is strictly prohibited.',
           },
           {
             title: '8. Governing Law',
-            body: 'These Terms and Conditions are governed by and construed in accordance with the laws of the Sultanate of Oman. Any disputes shall be subject to the exclusive jurisdiction of the courts of the Sultanate of Oman.',
+            body: 'These Terms and Conditions are governed by and construed in accordance with the applicable law. Any disputes shall be subject to the jurisdiction of the applicable courts.',
           },
         ].map((section) => (
           <section key={section.title}>

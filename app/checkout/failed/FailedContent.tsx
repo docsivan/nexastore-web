@@ -22,7 +22,7 @@ export default function FailedContent() {
   const seconds = timeLeft % 60
 
   const whatsappMsg = encodeURIComponent(
-    `Hello Hayat Supplies, I had a payment issue with order reference ${orderId}. Can you help me complete my order?`
+    `Hello NexaStore, I had a payment issue with order reference ${orderId}. Can you help me complete my order?`
   )
 
   return (

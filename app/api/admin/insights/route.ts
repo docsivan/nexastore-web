@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   const since   = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const formula = encodeURIComponent(`IS_AFTER({created_at},"${since}")`)
-  const url     = `${AT_BASE}/Haya_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=100`
+  const url     = `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=100`
 
   try {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' })
@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest) {
     const allowed = ['acknowledged', 'dismissed', 'actioned', 'pending_approval']
     if (!allowed.includes(status)) return NextResponse.json({ error: 'invalid status' }, { status: 400 })
 
-    await fetch(`${AT_BASE}/Haya_Insights/${record_id}`, {
+    await fetch(`${AT_BASE}/Nexa_Insights/${record_id}`, {
       method:  'PATCH',
       headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
       body:    JSON.stringify({ fields: { status } }),

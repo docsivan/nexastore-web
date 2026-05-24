@@ -9,7 +9,7 @@ import ProductImageGallery from '@/components/products/ProductImageGallery'
 import ProductInfoPanel from '@/components/products/ProductInfoPanel'
 import RelatedProductsCarousel from '@/components/products/RelatedProductsCarousel'
 import RecentlyViewed from '@/components/products/RecentlyViewed'
-import HayaRecommend from '@/components/products/HayaRecommend'
+import NexaRecommend from '@/components/products/NexaRecommend'
 import ProductViewTracker from '@/components/products/ProductViewTracker'
 import SignalCapture from '@/components/products/SignalCapture'
 import ReviewsSection from '@/components/products/ReviewsSection'
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         try {
           const formula = encodeURIComponent(`AND({item_code}="${params.id}",NOT({meta_title_ar}=""))`)
           const seoRes  = await fetch(
-            `https://api.airtable.com/v0/${BASE_ID}/Haya_SEO?filterByFormula=${formula}&maxRecords=1`,
+            `https://api.airtable.com/v0/${BASE_ID}/Nexa_SEO?filterByFormula=${formula}&maxRecords=1`,
             { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
           )
           if (seoRes.ok) {
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     return {
-      title:       `${record.fields.name} | Hayat Supplies`,
+      title:       `${record.fields.name} | NexaStore`,
       description: `${record.fields.brand} · ${record.fields.pack_size} · OMR ${record.fields.final_price.toFixed(3)}`,
     }
   } catch {
@@ -105,13 +105,13 @@ export default async function ProductDetailPage({ params }: Props) {
       } catch {}
     }
 
-    // Check Haya_SEO for pre-generated schema
+    // Check Nexa_SEO for pre-generated schema
     let schemaJson: string | null = null
     if (API_KEY && BASE_ID) {
       try {
         const formula  = encodeURIComponent(`{item_code}="${product.id}"`)
         const seoRes   = await fetch(
-          `https://api.airtable.com/v0/${BASE_ID}/Haya_SEO?filterByFormula=${formula}&maxRecords=1`,
+          `https://api.airtable.com/v0/${BASE_ID}/Nexa_SEO?filterByFormula=${formula}&maxRecords=1`,
           { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
         )
         const seoData  = await seoRes.json()
@@ -170,7 +170,7 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
 
         <div className="mt-6">
-          <HayaRecommend productName={product.name} itemCode={product.id} category={product.category} />
+          <NexaRecommend productName={product.name} itemCode={product.id} category={product.category} />
         </div>
 
         <div className="mt-4">

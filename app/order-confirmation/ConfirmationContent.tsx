@@ -71,7 +71,7 @@ export default function ConfirmationContent() {
   useEffect(() => {
     const orderedProducts = cart.items.map((i) => i.product)
     if (orderedProducts.length > 0) saveToReorderList(orderedProducts)
-    localStorage.setItem('hayat_order_just_placed', Date.now().toString())
+    localStorage.setItem('nexa_order_just_placed', Date.now().toString())
     clearCart()
   }, [])
 
@@ -102,7 +102,7 @@ export default function ConfirmationContent() {
         <div className="flex flex-col gap-3">
           {[
             { icon: 'box', title: 'Order Processing',  desc: 'Our team will pick and pack your order within 2 business hours.' },
-            { icon: '🚚', title: 'Dispatch',           desc: 'Orders placed before 1 PM are dispatched same day within Muscat.' },
+            { icon: '🚚', title: 'Dispatch',           desc: 'Orders are dispatched promptly after confirmation.' },
             { icon: 'chat', title: 'WhatsApp Update',    desc: 'You will receive a WhatsApp message with tracking details when dispatched.' },
           ].map((step) => (
             <div key={step.title} className="flex items-start gap-3">

@@ -98,7 +98,7 @@ export default function UsersPage() {
       <div className="bg-primary text-white sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/admin" className="font-heading font-bold text-lg text-white hover:text-white/90">Hayat Supplies</Link>
+            <Link href="/admin" className="font-heading font-bold text-lg text-white hover:text-white/90">NexaStore</Link>
             <span className="text-white/40">·</span>
             <span className="text-white/80 text-sm font-body">User Management</span>
           </div>

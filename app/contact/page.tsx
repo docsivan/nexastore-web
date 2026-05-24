@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Breadcrumbs from '@/components/global/Breadcrumbs'
-import { HAYAT_EMAIL, HAYAT_PHONE, HAYAT_WHATSAPP, getWhatsAppUrl } from '@/lib/utils'
+import { NEXA_EMAIL, NEXA_PHONE, NEXA_WHATSAPP, getWhatsAppUrl } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Contact Us' }
 
@@ -11,7 +11,7 @@ export default function ContactPage() {
 
       <div className="mt-4 mb-8">
         <p className="font-body text-xs text-accent-dark font-semibold tracking-widest uppercase mb-1">Get in Touch</p>
-        <h1 className="font-heading font-bold text-3xl text-primary-dark">Contact Hayat Supplies</h1>
+        <h1 className="font-heading font-bold text-3xl text-primary-dark">Contact NexaStore</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -22,7 +22,7 @@ export default function ContactPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block font-body text-xs font-semibold text-slate mb-1.5">Full Name *</label>
-                <input type="text" className="input-field" placeholder="Dr. Ahmed Al-Rashdi" />
+                <input type="text" className="input-field" placeholder="John Smith" />
               </div>
               <div>
                 <label className="block font-body text-xs font-semibold text-slate mb-1.5">Email *</label>
@@ -32,7 +32,7 @@ export default function ContactPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block font-body text-xs font-semibold text-slate mb-1.5">Phone</label>
-                <input type="tel" className="input-field" placeholder="+968 9XXX XXXX" />
+                <input type="tel" className="input-field" placeholder="+1 (555) 000-0000" />
               </div>
               <div>
                 <label className="block font-body text-xs font-semibold text-slate mb-1.5">Organisation</label>
@@ -67,9 +67,8 @@ export default function ContactPage() {
             <h3 className="font-heading font-semibold text-sm text-primary-dark mb-4 uppercase tracking-wide">Contact Details</h3>
             <div className="flex flex-col gap-4">
               {[
-                { icon: '📞', label: 'Phone', value: HAYAT_PHONE, href: `tel:${HAYAT_PHONE}` },
-                { icon: '✉️', label: 'Email', value: HAYAT_EMAIL, href: `mailto:${HAYAT_EMAIL}` },
-                { icon: '🏢', label: 'Address', value: 'Al Khuwair, Muscat\nSultanate of Oman', href: undefined },
+                { icon: '📞', label: 'Phone', value: NEXA_PHONE, href: `tel:${NEXA_PHONE}` },
+                { icon: '✉️', label: 'Email', value: NEXA_EMAIL, href: `mailto:${NEXA_EMAIL}` },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3">
                   <span className="text-xl flex-shrink-0">{item.icon}</span>
@@ -91,9 +90,9 @@ export default function ContactPage() {
           {/* WhatsApp CTA */}
           <div className="card p-5 bg-[#E8F5E9] border-[#A5D6A7]">
             <p className="font-heading font-semibold text-sm text-[#2E7D32] mb-1">Prefer WhatsApp?</p>
-            <p className="font-body text-xs text-[#388E3C] mb-3">Get a faster response via WhatsApp during business hours (8AM–5PM, Sun–Thu).</p>
+            <p className="font-body text-xs text-[#D4891A] mb-3">Get a faster response via WhatsApp during business hours (8AM–5PM, Sun–Thu).</p>
             <a
-              href={getWhatsAppUrl(HAYAT_WHATSAPP, 'Hello, I have an enquiry about Hayat Supplies.')}
+              href={getWhatsAppUrl(NEXA_WHATSAPP, 'Hello, I have an enquiry about NexaStore.')}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366] text-white font-heading font-semibold px-4 py-2 rounded-btn hover:bg-[#22C55E] transition-colors text-sm"

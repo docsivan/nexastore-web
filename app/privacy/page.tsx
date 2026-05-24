@@ -18,11 +18,11 @@ export default function PrivacyPage() {
           },
           {
             title: '2. How We Use Your Information',
-            body: 'We use the information we collect to process and fulfill your orders, communicate with you about your orders and our products, send promotional communications (with your consent), improve our website and services, and comply with legal obligations under Omani law.',
+            body: 'We use the information we collect to process and fulfill your orders, communicate with you about your orders and our products, send promotional communications (with your consent), improve our website and services, and comply with applicable legal obligations.',
           },
           {
             title: '3. Information Sharing',
-            body: 'We do not sell, trade, or rent your personal information to third parties. We may share your information with service providers who assist us in operating our website (such as payment processors like PayTabs), delivery partners within Oman, and when required by law or governmental authority.',
+            body: 'We do not sell, trade, or rent your personal information to third parties. We may share your information with service providers who assist us in operating our website (such as payment processors like PayTabs), delivery partners, and when required by law or governmental authority.',
           },
           {
             title: '4. Payment Security',
@@ -34,15 +34,15 @@ export default function PrivacyPage() {
           },
           {
             title: '6. Data Retention',
-            body: 'We retain your personal data for as long as necessary to fulfil the purposes for which it was collected, including legal, accounting, or reporting requirements. Order records are retained for a minimum of 7 years in accordance with Omani commercial law.',
+            body: 'We retain your personal data for as long as necessary to fulfil the purposes for which it was collected, including legal, accounting, or reporting requirements. Order records are retained for a minimum of 7 years in accordance with applicable law.',
           },
           {
             title: '7. Your Rights',
-            body: 'You have the right to access, correct, or delete your personal information. You may also object to or restrict processing of your data. To exercise these rights, please contact us at privacy@hayatsupplies.com.',
+            body: 'You have the right to access, correct, or delete your personal information. You may also object to or restrict processing of your data. To exercise these rights, please contact us at privacy@nexastore.io.',
           },
           {
             title: '8. Contact',
-            body: 'If you have any questions about this Privacy Policy, please contact our Data Protection team at privacy@hayatsupplies.com or by post to Hayat Supplies LLC, Al Khuwair, Muscat, Sultanate of Oman.',
+            body: 'If you have any questions about this Privacy Policy, please contact our Data Protection team at privacy@nexastore.io or by post to NexaStore, nexastore.io.',
           },
         ].map((section) => (
           <section key={section.title}>

@@ -6,9 +6,9 @@ import { formatPrice } from '@/lib/formatters'
 import StockManagement from '@/components/admin/StockManagement'
 import CustomerLookup from '@/components/admin/CustomerLookup'
 import FlashSaleManager from '@/components/admin/FlashSaleManager'
-import HayaBriefing from '@/components/admin/HayaBriefing'
+import NexaBriefing from '@/components/admin/NexaBriefing'
 import BannerManager from '@/components/admin/BannerManager'
-import HayaControl from '@/components/admin/HayaControl'
+import NexaControl from '@/components/admin/NexaControl'
 
 interface AdminOrder {
   record_id: string; order_id: string; created_at: string
@@ -138,7 +138,7 @@ export default function AdminPage() {
       <main className="min-h-screen bg-surface flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <Link href="/" className="font-heading font-bold text-2xl text-primary">Hayat Supplies</Link>
+            <Link href="/" className="font-heading font-bold text-2xl text-primary">NexaStore</Link>
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-body font-semibold px-3 py-1.5 rounded-full mt-3 mx-auto">
               🔒 Staff Admin
             </div>
@@ -198,7 +198,7 @@ export default function AdminPage() {
       <div className="bg-primary text-white sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="font-heading font-bold text-lg text-white hover:text-white/90">Hayat Supplies</Link>
+            <Link href="/" className="font-heading font-bold text-lg text-white hover:text-white/90">NexaStore</Link>
             <span className="text-white/40">·</span>
             <span className="text-white/80 text-sm font-body">Staff Admin</span>
           </div>
@@ -330,7 +330,7 @@ export default function AdminPage() {
                           <span className="text-xs font-body text-slate-muted animate-pulse">Saving...</span>
                         )}
                         <div className="ml-auto">
-                          <a href={`https://wa.me/${order.phone}?text=${encodeURIComponent(`Hello ${order.customer_name}, this is Hayat Supplies with an update on your order ${order.order_id}.`)}`}
+                          <a href={`https://wa.me/${order.phone}?text=${encodeURIComponent(`Hello ${order.customer_name}, this is NexaStore with an update on your order ${order.order_id}.`)}`}
                             target="_blank" rel="noopener noreferrer"
                             className="text-xs font-body font-medium text-green-600 hover:text-green-700 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-50 transition-colors">
                             WhatsApp Customer
@@ -348,9 +348,9 @@ export default function AdminPage() {
         {tab === 'stock'      && authenticated && <StockManagement />}
         {tab === 'customers'  && authenticated && <CustomerLookup />}
         {tab === 'flash-sale' && authenticated && <FlashSaleManager />}
-        {tab === 'briefing'   && authenticated && <HayaBriefing />}
+        {tab === 'briefing'   && authenticated && <NexaBriefing />}
         {tab === 'banners'    && authenticated && <BannerManager />}
-        {tab === 'haya'       && authenticated && <HayaControl />}
+        {tab === 'haya'       && authenticated && <NexaControl />}
       </div>
     </main>
   )

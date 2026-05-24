@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         phone,
         customer_name: customer_name ?? 'Valued Customer',
         order_id,
-        message:       `Welcome to Hayat Supplies! Your first order #${order_id} is confirmed. We deliver same day in Muscat. Your account is now active.`,
+        message:       `Welcome to NexaStore! Your first order #${order_id} is confirmed. We deliver same day in Muscat. Your account is now active.`,
       }),
     }).catch(() => {})
 

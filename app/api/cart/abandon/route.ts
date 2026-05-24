@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const webhookUrl = process.env.MAKE_DISPATCH_WEBHOOK_URL
     if (!webhookUrl) return NextResponse.json({ success: false, reason: 'no webhook' })
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hayatsupplies.com'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nexastore.io'
 
     await fetch(webhookUrl, {
       method: 'POST',

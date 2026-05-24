@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     await sendMail({
       to: superEmails,
-      subject: 'Hayat Supplies Admin — Password Reset OTP',
+      subject: 'NexaStore Admin — Password Reset OTP',
       html: otpEmailHtml(otp, `${user.name} (${email})`),
     })
   } catch (e) {

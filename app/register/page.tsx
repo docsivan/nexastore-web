@@ -42,7 +42,7 @@ export default function RegisterPage() {
     finally  { setLoading(false); }
   };
 
-  const inp = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#003B73] transition-colors";
+  const inp = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D0D0D] transition-colors";
   const lbl = "block text-xs font-medium text-gray-600 mb-1";
 
   return (
@@ -51,8 +51,8 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/">
-            <span className="text-2xl font-bold text-[#003B73]">Hayat</span>
-            <span className="text-2xl font-bold text-[#4CAF50]"> Supplies</span>
+            <span className="text-2xl font-bold text-[#0D0D0D]">Nexa</span>
+            <span className="text-2xl font-bold text-[#F5A623]"> Supplies</span>
           </Link>
           <p className="text-sm text-gray-500 mt-1">Healthcare Procurement Platform</p>
         </div>
@@ -61,8 +61,8 @@ export default function RegisterPage() {
         <div className="flex items-center gap-3 mb-6">
           {[{n:1,t:"Account"},{n:2,t:"Delivery"}].map(({n,t}) => (
             <div key={n} className="flex-1">
-              <div className={`h-1 rounded-full transition-colors ${step >= n ? "bg-[#003B73]" : "bg-gray-200"}`}/>
-              <p className={`text-xs mt-1 text-center ${step === n ? "text-[#003B73] font-medium" : "text-gray-400"}`}>
+              <div className={`h-1 rounded-full transition-colors ${step >= n ? "bg-[#0D0D0D]" : "bg-gray-200"}`}/>
+              <p className={`text-xs mt-1 text-center ${step === n ? "text-[#0D0D0D] font-medium" : "text-gray-400"}`}>
                 {t}
               </p>
             </div>
@@ -72,7 +72,7 @@ export default function RegisterPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           {step === 1 ? (
             <>
-              <h2 className="text-lg font-semibold text-[#003B73] mb-5">Create your account</h2>
+              <h2 className="text-lg font-semibold text-[#0D0D0D] mb-5">Create your account</h2>
               <div className="space-y-4">
                 <div><label className={lbl}>Full Name *</label>
                   <input className={inp} value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Dr. Ahmed Al Rashdi" />
@@ -92,13 +92,13 @@ export default function RegisterPage() {
               </div>
               {error && <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
               <button onClick={goToStep2}
-                className="w-full mt-5 bg-[#003B73] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#002a55] transition-colors">
+                className="w-full mt-5 bg-[#0D0D0D] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#002a55] transition-colors">
                 Continue →
               </button>
             </>
           ) : (
             <>
-              <h2 className="text-lg font-semibold text-[#003B73] mb-2">Add delivery address</h2>
+              <h2 className="text-lg font-semibold text-[#0D0D0D] mb-2">Add delivery address</h2>
               <p className="text-xs text-gray-500 mb-4">We&apos;ll use this as your default delivery address. You can add more later.</p>
               <AddressCapture
                 onSave={(a) => { setAddress(a); handleSubmit(); }}
@@ -108,7 +108,7 @@ export default function RegisterPage() {
               {error && <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
               {loading && <p className="mt-3 text-sm text-center text-gray-500">Creating your account...</p>}
               <button onClick={() => setStep(1)}
-                className="w-full mt-3 text-sm text-gray-500 hover:text-[#003B73] transition-colors">
+                className="w-full mt-3 text-sm text-gray-500 hover:text-[#0D0D0D] transition-colors">
                 ← Back
               </button>
             </>
@@ -116,7 +116,7 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-gray-500 mt-4">
             Already have an account?{" "}
-            <Link href="/login" className="text-[#003B73] font-medium hover:underline">Sign in</Link>
+            <Link href="/login" className="text-[#0D0D0D] font-medium hover:underline">Sign in</Link>
           </p>
         </div>
       </div>

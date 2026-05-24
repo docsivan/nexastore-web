@@ -5,8 +5,8 @@ import { generateItemListSchema } from '@/lib/schema'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Healthcare Guides & Resources | Hayat Supplies Oman',
-  description: 'Expert guides on infection control, dental supplies, PPE, diagnostics, and sterilization for clinics and hospitals in Oman.',
+  title: 'Healthcare Guides & Resources | NexaStore',
+  description: 'Expert guides on infection control, dental supplies, PPE, diagnostics, and sterilization for clinics and hospitals worldwide.',
 }
 
 const API_KEY = process.env.AIRTABLE_API_KEY!
@@ -52,7 +52,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'medical-devices':   'bg-slate-100 text-slate-700',
 }
 
-const SITE_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'hayatsupplies.com'
+const SITE_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'nexastore.io'
 
 export default async function GuidesIndexPage() {
   const guides = await getPublishedGuides()
@@ -77,7 +77,7 @@ export default async function GuidesIndexPage() {
         </nav>
         <h1 className="font-heading text-3xl font-bold text-primary-dark">Healthcare Guides</h1>
         <p className="font-body text-slate-muted mt-2 max-w-2xl">
-          Expert resources for clinics, dental practices, and hospitals sourcing medical supplies in Oman.
+          Expert resources for clinics, dental practices, and hospitals worldwide.
         </p>
       </div>
 

@@ -4,7 +4,7 @@ const API_KEY      = process.env.AIRTABLE_API_KEY!
 const BASE_ID      = process.env.AIRTABLE_BASE_ID!
 const AT_BASE      = `https://api.airtable.com/v0/${BASE_ID}`
 const CRON_SECRET  = process.env.CRON_SECRET
-const SITE_URL     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hayatsupplies.com'
+const SITE_URL     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nexastore.io'
 
 const headers = {
   Authorization: `Bearer ${API_KEY}`,
@@ -32,9 +32,9 @@ async function updateOrderNotes(recordId: string, notes: Record<string, string>,
 async function sendWhatsAppReminder(phone: string, orderId: string, type: '1hr' | '1day' | 'Cancelled') {
   const retryUrl = `${SITE_URL}/checkout/failed?id=${orderId}`
   const messages = {
-    '1hr':       `Hello! Your Hayat Supplies order ${orderId} is awaiting payment. Retry here: ${retryUrl}`,
-    '1day':      `Final reminder: Your Hayat Supplies order ${orderId} will be cancelled in a few hours if payment is not completed.`,
-    'Cancelled': `Your Hayat Supplies order ${orderId} has been cancelled. You can place a new order at hayatsupplies.com`,
+    '1hr':       `Hello! Your NexaStore order ${orderId} is awaiting payment. Retry here: ${retryUrl}`,
+    '1day':      `Final reminder: Your NexaStore order ${orderId} will be cancelled in a few hours if payment is not completed.`,
+    'Cancelled': `Your NexaStore order ${orderId} has been cancelled. You can place a new order at nexastore.io`,
   }
   console.log(`[WhatsApp ${type}] To: ${phone} — ${messages[type]}`)
   return true

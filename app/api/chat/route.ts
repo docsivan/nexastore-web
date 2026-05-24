@@ -3,7 +3,7 @@ import { callHaiku } from '@/lib/claude'
 import type { ChatMessage } from '@/lib/groq'
 import { getProducts } from '@/lib/airtable'
 import { adaptAirtableProduct } from '@/lib/adapters'
-import { buildMemoryContext } from '@/lib/haya-context'
+import { buildMemoryContext } from '@/lib/nexa-context'
 import { sanitizeChatInput, HAYA_SAFETY_SUFFIX } from '@/lib/sanitize'
 
 const cache = new Map<string, { response: string; ts: number }>()
@@ -102,7 +102,7 @@ function buildSystemPrompt(
       ? `FIRST MESSAGE — RETURNING CUSTOMER:
 Greet: "Welcome back ${salutation} from ${customer?.clinic}. Would you like delivery to the same address as before, or a different location today?"`
       : `FIRST MESSAGE — NEW CUSTOMER:
-Greet: "Good day Dr. Welcome to Hayat Supplies. How may I assist you today?"
+Greet: "Good day Dr. Welcome to NexaStore. How may I assist you today?"
 Then IMMEDIATELY also respond to whatever they said (product, question, or greeting).
 After responding to their query, ask ONCE: "May I have your name, clinic address, and WhatsApp number so I can assist you quickly and follow up personally?"`
     : ''
@@ -112,7 +112,7 @@ After responding to their query, ask ONCE: "May I have your name, clinic address
 
 CRITICAL LAUNCH PHASE RULES (override everything else):
 - Do NOT reveal any specific prices, OMR amounts, or cost figures
-- When asked about price, say: "We will offer the most competitive prices in Oman for certified healthcare supplies. Register your interest at hayatsupplies.com and our team will reach out to you personally with pricing before we go live."
+- When asked about price, say: "We will offer the most competitive prices for certified supplies. Register your interest at nexastore.io and our team will reach out to you personally with pricing before we go live."
 - Do NOT say products are "in stock" or give stock quantities
 - DO ask customers about their requirements — what products they need, volumes, their facility type
 - DO take note of their requirements and say: "I have noted your requirement for [product]. We will make sure to have this in our portfolio at launch."
@@ -120,7 +120,7 @@ CRITICAL LAUNCH PHASE RULES (override everything else):
 - Never mention competitor names or prices
 
 
-You are Hayat Assistant — AI procurement advisor for Hayat Supplies, Sultanate of Oman.
+You are Nexa Assistant — AI procurement advisor for NexaStore, 
 You serve doctors, dentists, and healthcare procurement officers with warmth and professionalism.
 
 ${customerBlock}
@@ -155,7 +155,7 @@ Show from catalogue:
 "Yes Dr, [Product Name] is available in our catalogue.
 - Pack size: [size]
 - Category: [category]
-We will offer the most competitive pricing before launch. Register at hayatsupplies.com for early access and personal pricing.
+We will offer the most competitive pricing before launch. Register at nexastore.io for early access and personal pricing.
 Would you like me to note this for your order?"
 
 B. GENERIC TERM (e.g. "gloves", "masks", "syringes"):
@@ -178,7 +178,7 @@ NEVER mention specific prices or stock quantities during launch phase.
 
 FOR ALL ITEMS: "Dr, this item is available in our catalogue.
 We will confirm pricing and availability personally before launch.
-Register your interest at hayatsupplies.com."
+Register your interest at nexastore.io."
 
 OUT OF STOCK: "Dr, let me note this requirement and our team will confirm availability for you."
 
@@ -197,10 +197,10 @@ Gentle reminder: "Dr, just a gentle reminder — your order is ready. Please com
 ══════════════════════════════════════════════════
 RULE 5 — DELIVERY
 ══════════════════════════════════════════════════
-- Muscat: "Dr, we will deliver today."
+- Same-city delivery: "We will deliver today."
 - Outside Muscat: "Dr, delivery will be tomorrow or within 2–3 days."
 - Remote areas: "Dr, delivery will take 3–5 days."
-- Delivery charge: OMR 2.500 within Muscat. Varies outside.
+- Delivery charges apply based on location.
 - Urgent delivery: "Dr, I will check with our team on urgent delivery and confirm shortly."
 
 ══════════════════════════════════════════════════
@@ -335,10 +335,10 @@ export async function POST(req: NextRequest) {
 Then say: "Dr, I will share this with our team. They will contact you today."
 Do NOT negotiate price or make any commitments.`
     } else {
-      catalogue = `Hayat Supplies — healthcare procurement, Oman.
+      catalogue = `NexaStore — AI commerce platform.
 Categories: Infection Control, Dental, PPE, Diagnostics, Sterilization, Medical Devices.
-Delivery: Muscat same day | Outside Muscat 1-3 days | Remote 3-5 days.
-Delivery charge: OMR 2.500 within Muscat.`
+Delivery: Fast global shipping.
+Delivery charges apply.`
     }
 
     // Strip phone — never pass to AI prompt

@@ -58,7 +58,7 @@ async function fetchOrders(since: string): Promise<{ paid: OrderRec[]; abandoned
 async function fetchHayaLog(since: string): Promise<HayaLogRec[]> {
   const formula = encodeURIComponent(`IS_AFTER({created_at},"${since}")`)
   const res = await fetch(
-    `${AT_BASE}/Haya_Log?filterByFormula=${formula}&maxRecords=500`,
+    `${AT_BASE}/Nexa_Log?filterByFormula=${formula}&maxRecords=500`,
     { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
   )
   if (!res.ok) return []
@@ -68,7 +68,7 @@ async function fetchHayaLog(since: string): Promise<HayaLogRec[]> {
 async function fetchCROSignals(since: string): Promise<CROSignal[]> {
   const formula = encodeURIComponent(`IS_AFTER({created_at},"${since}")`)
   const res = await fetch(
-    `${AT_BASE}/Haya_CRO?filterByFormula=${formula}&maxRecords=500`,
+    `${AT_BASE}/Nexa_CRO?filterByFormula=${formula}&maxRecords=500`,
     { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
   )
   if (!res.ok) return []
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
     ? parseFloat((paid.reduce((s, o) => s + (o.fields.total ?? 0), 0) / paid.length).toFixed(3))
     : 0
 
-  // Signal breakdown from Haya_Log
+  // Signal breakdown from Nexa_Log
   const signalCounts: Record<string, number> = {}
   const productViews: Record<string, number> = {}
   for (const log of hayaLog) {

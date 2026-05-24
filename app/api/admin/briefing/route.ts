@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
       top_products: top5,
     }
 
-    const prompt = `You are Haya, AI Business Owner of Hayat Supplies Oman.
+    const prompt = `You are Haya, AI Business Owner of NexaStore.
 Write a concise morning briefing for the owner based on this data:
 
 Yesterday: ${data.yesterday_orders} orders, OMR ${data.yesterday_revenue.toFixed(3)} revenue

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     console.error('[POST /api/whatsapp/message]', error)
     // Return a sensible fallback so the button always works
     return NextResponse.json({
-      message: 'Hello Hayat Supplies, I need assistance with my order. Please help me.',
+      message: 'Hello NexaStore, I need assistance with my order. Please help me.',
       fallback: true,
     })
   }

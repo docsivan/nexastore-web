@@ -29,7 +29,7 @@ const ChatContext = createContext<ChatContextType | null>(null)
 const WELCOME: Message = {
   id: '0',
   role: 'assistant',
-  content: 'Hello! I am **Hayat Assistant**.\nI can help you find products, build your monthly order, or track a delivery.\n\nWhat are you looking for today?',
+  content: 'Hello! I am **Nexa Assistant**.\nI can help you find products, build your monthly order, or track a delivery.\n\nWhat are you looking for today?',
   timestamp: new Date(),
 }
 

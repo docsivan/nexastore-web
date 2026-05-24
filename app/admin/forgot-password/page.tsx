@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
     <main className="min-h-screen bg-surface flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="font-heading font-bold text-2xl text-primary">Hayat Supplies</Link>
+          <Link href="/" className="font-heading font-bold text-2xl text-primary">NexaStore</Link>
           <p className="font-body text-sm text-slate-muted mt-2">Admin Password Reset</p>
         </div>
 

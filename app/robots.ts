@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/coming-soon',
       disallow: ['/api/', '/admin/', '/dashboard/'],
     },
-    sitemap: 'https://hayatsupplies.com/sitemap.xml',
+    sitemap: 'https://nexastore.io/sitemap.xml',
   }
 }

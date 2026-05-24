@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="font-heading font-bold text-2xl text-primary">
-            Hayat Supplies
+            NexaStore
           </Link>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-body font-semibold px-3 py-1.5 rounded-full mt-3 mx-auto">
             Staff Admin

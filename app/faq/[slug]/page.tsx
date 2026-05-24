@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const content = await getContentBySlug(params.slug)
   if (!content || content.status !== 'published') return { title: 'FAQ Not Found' }
   return {
-    title:       content.meta_title || `${content.title} | Hayat Supplies`,
+    title:       content.meta_title || `${content.title} | NexaStore`,
     description: content.meta_description,
     keywords:    content.keywords,
   }

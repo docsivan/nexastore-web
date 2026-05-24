@@ -85,7 +85,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Hydrate from localStorage
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('hayat_cart')
+      const raw = localStorage.getItem('nexa_cart')
       if (raw) {
         const parsed = JSON.parse(raw)
         dispatch({ type: 'HYDRATE', items: parsed })
@@ -96,7 +96,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Persist to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('hayat_cart', JSON.stringify(state.items))
+      localStorage.setItem('nexa_cart', JSON.stringify(state.items))
     } catch {}
   }, [state.items])
 
@@ -109,7 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       clarityEvent('add_to_cart', product.id)
       trackAddToCart({ id: product.id, name: product.name, price: product.price, category: product.category }, quantity)
       const sessionId = getOrCreateSessionId()
-      fetch('/api/haya/signal', {
+      fetch('/api/nexa/signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,11 +125,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     removeItem: (productId) => dispatch({ type: 'REMOVE_ITEM', productId }),
     updateQty: (productId, quantity) => dispatch({ type: 'UPDATE_QTY', productId, quantity }),
     clearCart: () => {
-      const recentOrder = typeof window !== 'undefined' && localStorage.getItem('hayat_order_just_placed')
+      const recentOrder = typeof window !== 'undefined' && localStorage.getItem('nexa_order_just_placed')
       const isRecentOrder = recentOrder && Date.now() - parseInt(recentOrder) < 30000
       if (!isRecentOrder && state.items.length > 0) {
         const sessionId = getOrCreateSessionId()
-        fetch('/api/haya/signal', {
+        fetch('/api/nexa/signal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

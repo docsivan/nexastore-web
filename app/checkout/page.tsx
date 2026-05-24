@@ -143,7 +143,7 @@ export default function CheckoutPage() {
           <div>
             <h2 className="font-heading font-semibold text-base text-primary-dark mb-3">Delivery Address</h2>
             {confirmedAddress ? (
-              <div className="bg-blue-50 border border-[#003B73]/20 rounded-xl p-3 flex items-start justify-between">
+              <div className="bg-blue-50 border border-[#0D0D0D]/20 rounded-xl p-3 flex items-start justify-between">
                 <p className="text-sm text-gray-700">
                   {[confirmedAddress.building, confirmedAddress.street, confirmedAddress.area, confirmedAddress.wilayat, confirmedAddress.governorate].filter(Boolean).join(', ')}
                 </p>

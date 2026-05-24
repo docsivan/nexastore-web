@@ -53,7 +53,7 @@ type TrendRec = {
 
 async function fetchHayaSEO(): Promise<HayaSEORec[]> {
   const res = await fetch(
-    `${AT_BASE}/Haya_SEO?maxRecords=500&sort[0][field]=created_at&sort[0][direction]=desc`,
+    `${AT_BASE}/Nexa_SEO?maxRecords=500&sort[0][field]=created_at&sort[0][direction]=desc`,
     { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
   )
   if (!res.ok) return []
@@ -81,7 +81,7 @@ async function fetchTrends(): Promise<TrendRec[]> {
 async function fetchSEOInsights(): Promise<HayaInsightRec[]> {
   const formula = encodeURIComponent(`{insight_type}="cro_problem"`)
   const res = await fetch(
-    `${AT_BASE}/Haya_Insights?filterByFormula=${formula}&maxRecords=10&sort[0][field]=created_at&sort[0][direction]=desc`,
+    `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&maxRecords=10&sort[0][field]=created_at&sort[0][direction]=desc`,
     { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
   )
   if (!res.ok) return []

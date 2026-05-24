@@ -7,7 +7,7 @@ import ProductGrid from '@/components/products/ProductGrid'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import { generateItemListSchema } from '@/lib/schema'
 
-const SITE_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'hayatsupplies.com'
+const SITE_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'nexastore.io'
 
 export const metadata: Metadata = { title: 'Products' }
 export const dynamic = 'force-dynamic'
