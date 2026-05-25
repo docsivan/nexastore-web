@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callSonnet } from '@/lib/claude'
 import { runRevenuLeakAgent } from '@/lib/nexa-agents'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,13 +182,14 @@ export async function GET(req: NextRequest) {
       total_products:    products.length,
     }
 
-    const prompt = `You are CFO of NexaStore, a global AI commerce platform.
+    const storeCtx = await getStoreContext()
+    const prompt = `You are CFO of ${storeCtx.storeName}, a global AI commerce platform.
 Analyze the following 30-day financial data and produce exactly 4 concise CFO insights.
 Each insight must be actionable and specific. Return a JSON array of 4 strings only, no markdown.
 
 Data: ${JSON.stringify(context, null, 2)}`
 
-    const raw = await callSonnet(prompt, 'You are CFO of NexaStore, a global AI commerce platform. Return only valid JSON arrays with no markdown.')
+    const raw = await callSonnet(prompt, `You are CFO of ${storeCtx.storeName}, a global AI commerce platform. Return only valid JSON arrays with no markdown.`)
     let insights: string[] = []
     try {
       const cleaned = raw.replace(/```json\n?|```/g, '').trim()
@@ -200,7 +202,7 @@ Data: ${JSON.stringify(context, null, 2)}`
     // Write each insight to Nexa_Insights
     await Promise.all(insights.slice(0, 4).map(text => writeInsight(String(text))))
 
-    // Revenue leak check — products with capital > OMR 50 and < 2 orders in 30 days
+    // Revenue leak check — products with capital > $50 and < 2 orders in 30 days
     let leakInsights: string[] = []
     try {
       const deadStockProducts = products

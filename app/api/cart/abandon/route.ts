@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
         phone,
         customer_name: customer_name ?? 'Valued Customer',
         item_count:    items.length,
-        total:         Number(total).toFixed(3),
+        total:         Number(total).toFixed(2),
         cart_url:      `${siteUrl}/cart`,
-        message:       `Hi ${customer_name ?? 'there'}, you left ${items.length} item${items.length > 1 ? 's' : ''} worth OMR ${Number(total).toFixed(3)} in your cart. Complete your order here: ${siteUrl}/cart`,
+        message:       `Hi ${customer_name ?? 'there'}, you left ${items.length} item${items.length > 1 ? 's' : ''} worth \${Number(total).toFixed(2)} in your cart. Complete your order here: ${siteUrl}/cart`,
       }),
     }).catch(() => {})
 

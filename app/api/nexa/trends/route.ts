@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,14 +8,15 @@ const BASE_ID     = process.env.AIRTABLE_BASE_ID!
 const AT_BASE     = `https://api.airtable.com/v0/${BASE_ID}`
 const TRENDS_URL  = process.env.TRENDS_SERVER_URL ?? 'http://localhost:5001'
 
-const TOPICS = [
-  { topic: 'infection control supplies', category: 'infection-control' },
-  { topic: 'dental supplies global',        category: 'dental-supplies'   },
-  { topic: 'PPE medical gloves',          category: 'ppe'               },
-  { topic: 'medical diagnostics',         category: 'diagnostics'       },
-  { topic: 'sterilization equipment',     category: 'sterilization'     },
-  { topic: 'medical devices clinic',      category: 'medical-devices'   },
-]
+async function buildTopics(): Promise<Array<{ topic: string; category: string }>> {
+  const storeCtx = await getStoreContext()
+  return storeCtx.categories
+    .split(',')
+    .map(c => c.trim())
+    .filter(Boolean)
+    .slice(0, 6)
+    .map(cat => ({ topic: `${cat} products`, category: cat.toLowerCase().replace(/\s+/g, '-') }))
+}
 
 interface TrendsResponse {
   keyword:         string
@@ -31,7 +33,7 @@ function checkAuth(req: NextRequest): boolean {
   return cronSecret === process.env.CRON_SECRET || !!adminPin
 }
 
-async function fetchTrends(topic: string, geo = 'OM', weeks = 12): Promise<TrendsResponse> {
+async function fetchTrends(topic: string, geo = 'GLOBAL', weeks = 12): Promise<TrendsResponse> {
   const params = new URLSearchParams({ kw: topic, geo, weeks: String(weeks) })
   try {
     const res = await fetch(`${TRENDS_URL}/trends?${params}`, {
@@ -93,6 +95,7 @@ export async function GET(req: NextRequest) {
     }, { status: 503 })
   }
 
+  const TOPICS = await buildTopics()
   let upserted     = 0
   const errors: string[] = []
   const results: Array<{ topic: string; trend_value: number; trend_direction: string; error?: string }> = []
@@ -119,7 +122,7 @@ export async function GET(req: NextRequest) {
           const prev4 = vals.slice(-8, -4).reduce((s, v) => s + v, 0) / 4
           return prev4 > 0 ? parseFloat(((last4 - prev4) / prev4 * 100).toFixed(1)) : 0
         })(),
-        geo:             'OM',
+        geo:             t.geo,
         related_queries: t.data.length > 0 ? `${t.data.length} weeks of data (${t.data[0]?.date} – ${t.data.at(-1)?.date})` : '',
         rising_queries:  '',
         weekly_data:     JSON.stringify(t.data),

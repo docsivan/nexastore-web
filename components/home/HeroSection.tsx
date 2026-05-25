@@ -45,7 +45,7 @@ export default function HeroSection() {
               </svg>
             </Link>
             <Link
-              href="/products?category=infection-control"
+              href="/products?category=moisturisers"
               className="inline-flex items-center justify-center gap-2 border border-white/30 text-white font-heading font-semibold px-7 py-3 rounded-btn hover:bg-white/10 transition-colors"
             >
               Infection Control

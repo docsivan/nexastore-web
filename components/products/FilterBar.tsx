@@ -74,7 +74,7 @@ export default function FilterBar({
 
       {/* Price range */}
       <div className="mb-6">
-        <p className="font-body text-xs text-slate-muted uppercase tracking-wider mb-3 font-semibold">Price Range (OMR)</p>
+        <p className="font-body text-xs text-slate-muted uppercase tracking-wider mb-3 font-semibold">Price Range (USD)</p>
         <div className="flex items-center gap-2">
           <input
             type="number"

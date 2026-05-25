@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callSonnet } from '@/lib/claude'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,23 +27,21 @@ async function getRelatedGuides(category: string): Promise<Array<{ title: string
 }
 
 async function generateSchemaJson(name: string, brand: string, category: string, item_code: string): Promise<string> {
-  const MEDICAL_TYPES = ['medical devices', 'sterilization', 'diagnostics']
-  const isMedical     = MEDICAL_TYPES.some(t => category.toLowerCase().includes(t))
-  const schemaType    = isMedical ? 'MedicalDevice' : 'Product'
-  const siteDomain    = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'nexastore.io'
+  const storeCtx   = await getStoreContext()
+  const siteDomain = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'nexastore.io'
 
-  const systemPrompt = `You are a schema.org JSON-LD expert for medical/healthcare e-commerce.
-Generate a valid JSON-LD schema for a healthcare product. Return ONLY the raw JSON object, no markdown fences.`
+  const systemPrompt = `You are a schema.org JSON-LD expert for e-commerce.
+Generate a valid JSON-LD schema for a product. Return ONLY the raw JSON object, no markdown fences.`
 
-  const userPrompt = `Generate a schema.org/${schemaType} JSON-LD for:
+  const userPrompt = `Generate a schema.org/Product JSON-LD for:
 Name: ${name}
-Brand: ${brand || 'NexaStore'}
+Brand: ${brand || storeCtx.storeName}
 Category: ${category}
 SKU: ${item_code}
 URL: https://${siteDomain}/products/${item_code}
-Currency: OMR
-Seller: NexaStore
-Include @context, @type, name, description, sku/identifier, brand, offers (with price placeholder "0.000", priceCurrency OMR, availability InStock).`
+Currency: ${storeCtx.currency}
+Seller: ${storeCtx.storeName}
+Include @context, @type, name, description, sku/identifier, brand, offers (with price placeholder "0.00", priceCurrency ${storeCtx.currency}, availability InStock).`
 
   const raw = await callSonnet(userPrompt, systemPrompt)
   return raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -80,10 +79,10 @@ export async function POST(req: NextRequest) {
     if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
 
     const [description, internalLinks, schemaJson] = await Promise.all([
-      callSonnet(
+      getStoreContext().then(ctx => callSonnet(
         `Product: ${name}\nBrand: ${brand ?? 'N/A'}\nCategory: ${category ?? 'N/A'}\nPack size: ${pack_size ?? 'N/A'}`,
-        'You are a product copywriter for NexaStore. Write a 2-sentence product description (max 100 words) that is professional, accurate, and SEO-optimised for healthcare procurement. Focus on clinical use, material quality, and pack efficiency. No marketing fluff. No price mentions.'
-      ),
+        `You are a product copywriter for ${ctx.storeName}. Write a 2-sentence product description (max 100 words) that is professional, accurate, and SEO-optimised. Focus on product use, quality, and pack efficiency. No marketing fluff. No price mentions.`
+      )),
       getRelatedGuides(category ?? ''),
       item_code ? generateSchemaJson(name, brand ?? '', category ?? '', item_code) : Promise.resolve(''),
     ])

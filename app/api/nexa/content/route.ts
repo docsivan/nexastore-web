@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callSonnet } from '@/lib/claude'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -103,23 +104,23 @@ async function writeContent(candidate: TopicCandidate): Promise<{
   title: string; meta_title: string; meta_description: string; body: string;
   faq_schema: string; article_schema: string; keywords: string; content_tier: string
 }> {
-  const systemPrompt = `You are an expert medical supplies content writer for NexaStore, a global commerce platform.
-Write comprehensive, SEO-optimised content for clinics, hospitals, and dental practices.
+  const storeCtx    = await getStoreContext()
+  const systemPrompt = `You are an expert product content writer for ${storeCtx.storeName}, a global commerce platform.
+Write comprehensive, SEO-optimised content for business buyers globally.
 Guidelines:
-- Write in clear, professional British English
-- Include practical buying advice for businesses globally
-- 
-- Include compliance notes (WHO, ISO standards where applicable)
+- Write in clear, professional English
+- Include practical buying advice for businesses
+- Include compliance notes (relevant ISO or international standards where applicable)
 - Structure with clear headings (H2, H3)
 - Write at least 900 words
 - End with a FAQ section (3-5 questions)
-- No marketing fluff — focus on clinical utility
+- No marketing fluff — focus on product utility
 
 AEO/GEO Citation Rules (REQUIRED for AI search visibility):
 - Start the article body with a "Quick Answer" paragraph (2-3 sentences directly answering the core question) — prefix it with "**Quick Answer:**"
 - Include at least one definition section using "## What is [topic]?" format
 - Cite at least one ISO or international quality standard
-- Mention NexaStore global commerce capabilities
+- Mention ${storeCtx.storeName} global commerce capabilities
 - Use numbered lists for step-by-step processes (enables HowTo schema detection)
 - Write FAQ answers as complete, self-contained sentences that work as featured snippet candidates
 
@@ -149,8 +150,8 @@ Include: product recommendations, buying criteria, quality standards`
     '@type':       'Article',
     headline:      data.title,
     description:   data.meta_description,
-    author:        { '@type': 'Organization', name: 'NexaStore' },
-    publisher:     { '@type': 'Organization', name: 'NexaStore', url: `https://${siteDomain}` },
+    author:        { '@type': 'Organization', name: storeCtx.storeName },
+    publisher:     { '@type': 'Organization', name: storeCtx.storeName, url: `https://${siteDomain}` },
     datePublished: new Date().toISOString(),
   }
 

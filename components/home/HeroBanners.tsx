@@ -6,38 +6,38 @@ import Image from 'next/image'
 
 const SLIDES = [
   {
-    overline: 'Sultanate of Oman · ISO 13485 · MOH Compliant',
-    headline: 'Premium Healthcare Supplies',
-    subtext: 'Verified stock. Same-day dispatch in Muscat. Expiry transparency on every product.',
-    cta: 'Browse Catalogue',
+    overline: 'Derma & Cosmetics · Premium Beauty',
+    headline: 'Skincare That Transforms',
+    subtext: 'Clinically formulated moisturisers, serums and treatments for radiant, healthy skin.',
+    cta: 'Shop Skincare',
     href: '/products',
-    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1600&h=600&fit=crop&auto=format',
-    trust: ['Verified Stock', 'MOH Compliant', 'Expiry Guaranteed', 'Bulk Pricing'],
+    image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1600&q=80',
+    trust: ['Dermatologist Tested', 'Cruelty Free', 'Premium Formulas', 'Fast Delivery'],
   },
   {
-    overline: 'Dental Procurement · GCC Leading Brands',
-    headline: 'Complete Dental Solutions',
-    subtext: 'Instruments, consumables and sterilization equipment from world-leading manufacturers.',
-    cta: 'View Dental Range',
-    href: '/products?category=Dental+Supplies',
-    image: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=1600&h=600&fit=crop&auto=format',
-    trust: ['CE Certified', 'ISO 13485', 'Direct Import', 'Volume Pricing'],
+    overline: 'Serums & Treatments · Advanced Skincare',
+    headline: 'Target Your Skin Goals',
+    subtext: 'High-performance serums, vitamin C, retinol and peptide complexes for every skin concern.',
+    cta: 'Shop Serums',
+    href: '/products?category=serums',
+    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1600&q=80',
+    trust: ['Vitamin C', 'Retinol', 'Peptides', 'All Skin Types'],
   },
   {
-    overline: 'Infection Control · PPE · Sterilization',
-    headline: 'Infection Control Essentials',
-    subtext: 'PPE, disinfectants and sterilization supplies meeting MOH Oman clinical standards.',
-    cta: 'Browse IPC Range',
-    href: '/products?category=Infection+Control',
-    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=1600&h=600&fit=crop&auto=format',
-    trust: ['MOH Standard', 'EN Certified', 'Same-Day Stock', 'Clinical Grade'],
+    overline: 'Sun Protection · Cleansers & Treatments',
+    headline: 'Complete Your Routine',
+    subtext: 'SPF sunscreens, gentle cleansers and targeted treatments to complete your daily skincare ritual.',
+    cta: 'Build My Routine',
+    href: '/products?category=cleansers',
+    image: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=1600&q=80',
+    trust: ['SPF Protection', 'Gentle Formulas', 'pH Balanced', 'Daily Use'],
   },
 ]
 
 const TRUST_ICONS = [
   <svg key="a" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"><path d="M8 1L2 4v4c0 3.5 2.5 6.5 6 7 3.5-1 6-3.5 6-7V4L8 1z"/><path d="M5.5 8l1.5 1.5 3-3"/></svg>,
-  <svg key="b" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"><path d="M6 2H4a1 1 0 00-1 1v9a1 1 0 001 1h8a1 1 0 001-1V3a1 1 0 00-1-1h-2M6 2a1 1 0 001 1h2a1 1 0 001-1M6 2a1 1 0 011-1h2a1 1 0 011 1M6 7h4M6 10h2"/></svg>,
-  <svg key="c" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"><circle cx="8" cy="8" r="6"/><path d="M8 4v4M6.5 9.5l1.5 1.5"/></svg>,
+  <svg key="b" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"><circle cx="8" cy="6" r="3"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>,
+  <svg key="c" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"><path d="M8 2l1.6 3.3 3.6.5-2.6 2.5.6 3.6L8 10.1l-3.2 1.8.6-3.6L2.8 5.8l3.6-.5z"/></svg>,
   <svg key="d" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"><path d="M2 6h12M5 3l-2 3v6a1 1 0 001 1h8a1 1 0 001-1V6l-2-3z"/></svg>,
 ]
 
@@ -73,10 +73,10 @@ export default function HeroBanners() {
             style={{ opacity: loaded[i] ? 1 : 0, transition: 'opacity 0.4s' }}
           />
           {!loaded[i] && (
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0D0D0D 0%, #001a3a 100%)' }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0D0D0D 0%, #1a0030 100%)' }} />
           )}
-          {/* Overlay — stronger on left for text legibility */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(0,20,50,0.88) 0%, rgba(0,20,50,0.75) 45%, rgba(0,20,50,0.35) 100%)' }} />
+          {/* Overlay */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(0,0,20,0.88) 0%, rgba(0,0,20,0.72) 45%, rgba(0,0,20,0.30) 100%)' }} />
           {/* Top accent stripe */}
           <div className="absolute top-0 left-0 right-0 h-px bg-accent opacity-70" />
 
@@ -123,7 +123,7 @@ export default function HeroBanners() {
             </div>
           </div>
 
-          {/* Slide counter — top right */}
+          {/* Slide counter */}
           <div className="absolute top-5 right-6 flex items-center gap-2 z-10">
             <span className="overline-label text-white/60">{String(i + 1).padStart(2, '0')} / {String(SLIDES.length).padStart(2, '0')}</span>
           </div>
@@ -138,7 +138,7 @@ export default function HeroBanners() {
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
       </button>
 
-      {/* Progress bar — bottom */}
+      {/* Progress bar */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-white/10 z-10">
         <div
           className="h-full bg-accent transition-all duration-700"

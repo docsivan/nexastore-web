@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   alternates: {
     canonical: "https://nexastore.io",
-    languages: { "en-OM": "https://nexastore.io", "ar-OM": "https://nexastore.io?lang=ar" },
+    languages: { "en-US": "https://nexastore.io", "ar": "https://nexastore.io?lang=ar" },
   },
   openGraph: {
     type: "website",
@@ -59,7 +59,7 @@ export const websiteSchema = {
   "@type": "WebSite",
   url: "https://nexastore.io",
   name: "NexaStore",
-  inLanguage: ["en-OM", "ar-OM"],
+  inLanguage: ["en-US", "ar"],
   potentialAction: {
     "@type": "SearchAction",
     target: { "@type": "EntryPoint", urlTemplate: "https://nexastore.io/products?q={search_term_string}" },

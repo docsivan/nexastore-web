@@ -7,7 +7,7 @@ const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!
 
 function fmt(n: number) {
-  return `OMR ${n.toLocaleString('en-OM', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export async function GET(

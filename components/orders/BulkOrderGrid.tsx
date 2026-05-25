@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Product } from '@/lib/types'
 import { formatPrice } from '@/lib/formatters'
 import { useCartContext } from '@/context/CartContext'
@@ -62,6 +63,7 @@ let rowCounter = 0
 export default function BulkOrderGrid() {
   const { addItem, cart } = useCartContext()
   const { showToast }     = useToast()
+  const router            = useRouter()
   const [catalogue, setCatalogue] = useState<Product[]>([])
   const [catLoading, setCatLoading] = useState(true)
   const [rows, setRows] = useState<OrderRow[]>([
@@ -87,7 +89,7 @@ export default function BulkOrderGrid() {
   }
 
   const handleSelect = (id: string, product: Product) => {
-    updateRow(id, { query: product.sku || product.id, product, results: [], open: false, error: '' })
+    updateRow(id, { query: product.name, product, results: [], open: false, error: '' })
     setTimeout(() => {
       const el = document.getElementById(`qty-${id}`) as HTMLInputElement
       el?.focus(); el?.select()
@@ -126,6 +128,7 @@ export default function BulkOrderGrid() {
     if (!valid.length) { showToast('No valid products to add', 'warning'); return }
     valid.forEach((r) => addItem(r.product!, r.qty))
     showToast(`${valid.length} product${valid.length !== 1 ? 's' : ''} added to cart`, 'success')
+    router.push('/checkout')
   }
 
   const clearAll = () => {
@@ -141,7 +144,7 @@ export default function BulkOrderGrid() {
     setTimeout(() => (document.getElementById(`query-${newId}`) as HTMLInputElement)?.focus(), 50)
   }
 
-  const subtotal   = rows.reduce((s, r) => s + (r.product ? r.product.price * r.qty : 0), 0)
+  const subtotal   = rows.reduce((s, r) => s + (r.product ? parseFloat(String(r.product.price)) * r.qty : 0), 0)
   const validCount = rows.filter((r) => r.product?.inStock).length
 
   return (
@@ -271,7 +274,7 @@ export default function BulkOrderGrid() {
 
               <div className="text-right pt-1.5">
                 {row.product
-                  ? <p className="text-sm font-heading font-bold text-primary-dark">{formatPrice(row.product.price * row.qty)}</p>
+                  ? <p className="text-sm font-heading font-bold text-primary-dark">{formatPrice(parseFloat(String(row.product.price)) * row.qty)}</p>
                   : <p className="text-sm text-slate-muted">—</p>
                 }
               </div>

@@ -8,11 +8,11 @@ export interface Product {
   subcategory?: string
   description: string
   descriptionAr: string
-  price: number          // OMR — already discounted final price
+  price: number          // USD — already discounted final price
   priceVat: number       // price incl. 5% VAT
   list_price?: number
   discount_percent?: number
-  currency: 'OMR'
+  currency: 'USD'
   images: string[]
   stock: number
   unit: string           // 'box', 'piece', 'pack', etc.
@@ -32,12 +32,11 @@ export interface Product {
 
 // ─── Category ───────────────────────────────────────────────────────────────
 export type ProductCategory =
-  | 'infection-control'
-  | 'dental-supplies'
-  | 'medical-devices'
-  | 'ppe'
-  | 'diagnostics'
-  | 'sterilization'
+  | 'moisturisers'
+  | 'serums'
+  | 'cleansers'
+  | 'sunscreen'
+  | 'treatments'
 
 export interface Category {
   id: ProductCategory

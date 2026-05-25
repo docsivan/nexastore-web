@@ -5,36 +5,44 @@
  * This keeps the UI layer unchanged while the data layer is Airtable.
  */
 
-import { AirtableProduct } from './airtableTypes'
+import { AirtableProduct, ProductFields } from './airtableTypes'
 import { Product, ProductCategory } from './types'
 
 const CATEGORY_MAP: Record<string, ProductCategory> = {
-  'infection-control':             'infection-control',
-  'infection control':             'infection-control',
-  'infectioncontrol':              'infection-control',
-  'dental-supplies':               'dental-supplies',
-  'dental supplies':               'dental-supplies',
-  'dental':                        'dental-supplies',
-  'dentalequipment':               'dental-supplies',
-  'dental equipment':              'dental-supplies',
-  'medical-devices':               'medical-devices',
-  'medical devices':               'medical-devices',
-  'medical':                       'medical-devices',
-  'medicaldevices':                'medical-devices',
-  'ppe':                           'ppe',
-  'personal protective equipment': 'ppe',
-  'personal-protective-equipment': 'ppe',
-  'diagnostics':                   'diagnostics',
-  'diagnostic':                    'diagnostics',
-  'sterilization':                 'sterilization',
-  'sterilisation':                 'sterilization',
-  'sterile':                       'sterilization',
+  'moisturisers':  'moisturisers',
+  'moisturiser':   'moisturisers',
+  'moisturizer':   'moisturisers',
+  'moisturizers':  'moisturisers',
+  'serums':        'serums',
+  'serum':         'serums',
+  'cleansers':     'cleansers',
+  'cleanser':      'cleansers',
+  'sunscreen':     'sunscreen',
+  'sun-screen':    'sunscreen',
+  'spf':           'sunscreen',
+  'treatments':    'treatments',
+  'treatment':     'treatments',
+  // Legacy healthcare → cosmetics fallbacks
+  'infection-control':             'moisturisers',
+  'infection control':             'moisturisers',
+  'dental-supplies':               'serums',
+  'dental supplies':               'serums',
+  'dental':                        'serums',
+  'medical-devices':               'cleansers',
+  'medical devices':               'cleansers',
+  'medical':                       'cleansers',
+  'ppe':                           'sunscreen',
+  'personal protective equipment': 'sunscreen',
+  'diagnostics':                   'treatments',
+  'diagnostic':                    'treatments',
+  'sterilization':                 'treatments',
+  'sterilisation':                 'treatments',
 }
 
 function normaliseCategory(raw: string): ProductCategory {
-  if (!raw) return 'medical-devices'
+  if (!raw) return 'cleansers'
   const key = raw.toLowerCase().trim()
-  return CATEGORY_MAP[key] ?? (key.replace(/\s+/g, '-') as ProductCategory)
+  return CATEGORY_MAP[key] ?? 'cleansers'
 }
 
 function resolveImage(image_url: string, product_page_url: string, name: string, item_code = ''): string {
@@ -55,9 +63,9 @@ function resolveImage(image_url: string, product_page_url: string, name: string,
  * consumed by all existing UI components and the cart system.
  */
 export function adaptAirtableProduct(ap: AirtableProduct): Product {
-  const f = ap.fields
-  const finalPrice = Number(f.final_price) || 0
-  const vatPrice   = Math.round(finalPrice * 1.05 * 1000) / 1000
+  const f = ap.fields as ProductFields & Record<string, unknown>
+  const finalPrice = parseFloat(String(f.final_price ?? f.list_price ?? f['Price'] ?? f['price'] ?? f['unit_price'] ?? f['sale_price'] ?? 0)) || 0
+  const vatPrice   = Math.round(finalPrice * 1.05 * 100) / 100
 
   return {
     id:           f.item_code,           // item_code is the routing key
@@ -71,7 +79,7 @@ export function adaptAirtableProduct(ap: AirtableProduct): Product {
     list_price:      f.list_price != null ? Number(f.list_price) : undefined,
     discount_percent: f.discount_percent != null ? Number(f.discount_percent) : undefined,
     priceVat:        vatPrice,
-    currency:     'OMR',
+    currency:     'USD',
     images:       [resolveImage(f.image_url ?? '', f.product_page_url, f.name, f.item_code)],
     stock:        Number(f.stock_quantity) || 0,
     unit:         f.pack_size || 'unit',

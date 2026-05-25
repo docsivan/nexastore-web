@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callSonnet } from '@/lib/claude'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +61,7 @@ function parseClaudeJson(raw: string): { insight: string; action_required: strin
   return { insight: raw.trim(), action_required: '' }
 }
 
-const SYSTEM_PROMPT = 'You are Haya, the AI business intelligence engine for NexaStore, a global commerce platform. Your insights are brief (2-3 sentences), specific, and actionable. No generic advice. Return ONLY valid JSON — no markdown, no explanation.'
+let SYSTEM_PROMPT = 'You are the AI business intelligence engine. Your insights are brief (2-3 sentences), specific, and actionable. No generic advice. Return ONLY valid JSON — no markdown, no explanation.'
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -72,6 +73,9 @@ export async function GET(req: NextRequest) {
   if (!API_KEY || !BASE_ID) {
     return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
   }
+
+  const storeCtx = await getStoreContext()
+  SYSTEM_PROMPT  = `You are the AI business intelligence engine for ${storeCtx.storeName}. Your insights are brief (2-3 sentences), specific, and actionable. No generic advice. Return ONLY valid JSON — no markdown, no explanation.`
 
   // ── Fetch signals (30 days) ────────────────────────────────────────────────
   const since30  = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -116,7 +120,7 @@ export async function GET(req: NextRequest) {
         insightType: 'search_gap',
         priority:    4,
         skip:        searches.length === 0,
-        prompt:      `NexaStore customer searches (last 30 days): ${topSearches.join(', ')}. Identify the top 2-3 products we should add or promote to fill this demand. Be specific with product names.${JSON_SUFFIX}`,
+        prompt:      `${storeCtx.storeName} customer searches (last 30 days): ${topSearches.join(', ')}. Identify the top 2-3 products we should add or promote to fill this demand. Be specific with product names.${JSON_SUFFIX}`,
       },
       {
         pkg:         'hot_products',
@@ -130,14 +134,14 @@ export async function GET(req: NextRequest) {
         insightType: 'conversion_problem',
         priority:    5,
         skip:        false,
-        prompt:      `${abandons.length} cart abandonment events (last 30 days). Cart totals: ${abandons.slice(0, 10).map(s => s.cart_total ? `OMR ${Number(s.cart_total).toFixed(3)}` : 'unknown').join(', ')}. What is the most likely cause and single most important action to reduce it?${JSON_SUFFIX}`,
+        prompt:      `${abandons.length} cart abandonment events (last 30 days). Cart totals: ${abandons.slice(0, 10).map(s => s.cart_total ? `${storeCtx.currency} ${Number(s.cart_total).toFixed(2)}` : 'unknown').join(', ')}. What is the most likely cause and single most important action to reduce it?${JSON_SUFFIX}`,
       },
       {
         pkg:         'demand_forecast',
         insightType: 'demand_forecast',
         priority:    2,
         skip:        false,
-        prompt:      `Signals: ${searches.length} searches, ${views.length} views, ${cartAdds.length} cart adds, ${abandons.length} abandons (last 30 days). Which category should NexaStore prioritise for restocking and marketing this week?${JSON_SUFFIX}`,
+        prompt:      `Signals: ${searches.length} searches, ${views.length} views, ${cartAdds.length} cart adds, ${abandons.length} abandons (last 30 days). Which category should ${storeCtx.storeName} prioritise for restocking and marketing this week?${JSON_SUFFIX}`,
       },
     ]
 
@@ -223,7 +227,7 @@ export async function GET(req: NextRequest) {
       mom_growth_pct:     momGrowth,
     }
 
-    const patternPrompt = `Analyze these 90-day patterns for NexaStore and return the 3 most actionable business insights as a JSON array. Each object: {"insight_type":"pattern","insight":"...","action_required":"...","priority":1-5}\n\nData: ${JSON.stringify(patternData)}`
+    const patternPrompt = `Analyze these 90-day patterns for ${storeCtx.storeName} and return the 3 most actionable business insights as a JSON array. Each object: {"insight_type":"pattern","insight":"...","action_required":"...","priority":1-5}\n\nData: ${JSON.stringify(patternData)}`
 
     try {
       const raw     = await callSonnet(patternPrompt, SYSTEM_PROMPT)
@@ -257,14 +261,13 @@ export async function GET(req: NextRequest) {
       .map((r: any) => `---\nOutcome: ${r.fields.outcome}\n${r.fields.transcript}\n---`)
       .join('\n')
 
-    const convoPrompt = `You are Nexa AI learning engine for NexaStore.
+    const convoPrompt = `You are the AI learning engine for ${storeCtx.storeName}.
 Analyse these ${conversations.length} visitor conversations.
 Identify:
-1. Questions Haya answered poorly or avoided
-2. Topics visitors asked about that Haya had no good answer for
+1. Questions the assistant answered poorly or avoided
+2. Topics visitors asked about that had no good answer
 3. Patterns in conversations that did NOT convert vs those that DID
-4. Language or tone issues in Arabic conversations
-5. Products or categories frequently asked about
+4. Products or categories frequently asked about
 
 Return JSON array of insights:
 [{ insight_type: 'chat_gap', insight_text: '...', action_required: '...', priority: 'high|medium|low' }]
@@ -272,7 +275,7 @@ Return JSON array of insights:
 CONVERSATIONS:
 ${transcriptBlock}`
 
-    const convoInsights = await callSonnet(convoPrompt, 'You are Haya intelligence engine. Return valid JSON only.')
+    const convoInsights = await callSonnet(convoPrompt, `You are the AI intelligence engine for ${storeCtx.storeName}. Return valid JSON only.`)
     try {
       const parsed = JSON.parse(convoInsights.replace(/```json|```/g, '').trim())
       for (const insight of parsed.slice(0, 5)) {

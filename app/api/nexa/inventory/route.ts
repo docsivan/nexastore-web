@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runInventoryAgent, InventoryAlert } from '@/lib/nexa-agents'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -185,10 +186,11 @@ export async function GET(req: NextRequest) {
     // Send WhatsApp for CRITICAL items
     const criticalItems = flagged.filter(f => f.urgency === 'CRITICAL')
     if (criticalItems.length > 0) {
+      const storeCtx = await getStoreContext()
       const lines = criticalItems.map(
         p => `⚠️ ${p.name} (${p.brand}): ${p.stock} units, ~${p.days_to_stockout ?? 0}d left`
       )
-      const message = `🚨 *CRITICAL STOCK ALERT — NexaStore*\n\n${lines.join('\n')}\n\nReorder immediately to avoid stockout.`
+      const message = `🚨 *CRITICAL STOCK ALERT — ${storeCtx.storeName}*\n\n${lines.join('\n')}\n\nReorder immediately to avoid stockout.`
       await sendWhatsAppAlert(message)
     }
 

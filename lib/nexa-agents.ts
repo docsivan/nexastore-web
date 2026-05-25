@@ -1,4 +1,5 @@
 import { callSonnet } from './claude'
+import { getStoreContext } from './ai-context'
 
 function parseAgentJSON<T>(raw: string): T[] {
   try {
@@ -52,7 +53,8 @@ export type RevenueLeak = {
 }
 
 export async function runCMOAgent(data: unknown): Promise<CMORecommendation[]> {
-  const system = `You are Haya's AI CMO for NexaStore.
+  const ctx    = await getStoreContext()
+  const system = `You are the AI CMO for ${ctx.storeName}.
 Analyse this week's data and create a specific marketing plan.
 Return JSON array of exactly 5 objects:
 [{insight_type:'cmo_recommendation', insight_text, action_required, priority}]
@@ -61,15 +63,16 @@ Return JSON array of exactly 5 objects:
 3. Customer segment to target: which segment + what message
 4. Content gap: which topic to write about this week
 5. Search opportunity: which rising query to target
-Be specific with product names and OMR figures. Return JSON only.`
+Be specific with product names and ${ctx.currency} figures. Return JSON only.`
 
   const raw = await callSonnet(JSON.stringify(data), system)
   return parseAgentJSON<CMORecommendation>(raw)
 }
 
 export async function runCROAgent(data: unknown): Promise<CROFix[]> {
-  const system = `You are Haya's AI CRO specialist for NexaStore.
-Analyse conversion data and Clarity behavioural signals.
+  const ctx    = await getStoreContext()
+  const system = `You are the AI CRO specialist for ${ctx.storeName}.
+Analyse conversion data and behavioural signals.
 For each problem, give ONE specific actionable fix. Name exact elements.
 Return JSON array: [{insight_type:'cro_fix', page_url, insight_text, action_required, priority}]
 Return JSON only.`
@@ -79,7 +82,8 @@ Return JSON only.`
 }
 
 export async function runInventoryAgent(data: unknown): Promise<InventoryAlert[]> {
-  const system = `You are Haya's AI Inventory specialist for NexaStore.
+  const ctx    = await getStoreContext()
+  const system = `You are the AI Inventory specialist for ${ctx.storeName}.
 Analyse stock data. Flag days_to_stockout < 7 as CRITICAL, < 21 as URGENT. Name brand and recommend exact reorder quantity.
 Return JSON array: [{insight_type:'inventory_alert', insight_text, action_required, priority, item_code, urgency}]
 Return JSON only.`
@@ -89,10 +93,10 @@ Return JSON only.`
 }
 
 export async function runDemandAgent(data: unknown): Promise<DemandForecast[]> {
-  const system = `You are Haya's AI Demand Forecaster for NexaStore.
+  const ctx    = await getStoreContext()
+  const system = `You are the AI Demand Forecaster for ${ctx.storeName}.
 Analyse 90 days of sales and current search trends.
-Forecast demand per category for next 30 days.
-Consider Ramadan patterns, flu season, MOH audit cycles.
+Forecast demand per category for next 30 days based on the actual sales data provided.
 Return JSON array: [{insight_type:'demand_forecast', insight_text, action_required, priority, category, trend}]
 Return JSON only.`
 
@@ -101,9 +105,10 @@ Return JSON only.`
 }
 
 export async function runRevenuLeakAgent(data: unknown): Promise<RevenueLeak[]> {
-  const system = `You are Haya's AI CFO for NexaStore.
+  const ctx    = await getStoreContext()
+  const system = `You are the AI CFO for ${ctx.storeName}.
 Identify revenue leaks — capital tied up in slow-moving stock.
-Flag products where (stock_quantity × cost_price) > OMR 50 AND orders in last 30 days < 2.
+Flag products where (stock_quantity × cost_price) > 50 AND orders in last 30 days < 2.
 Recommend specific discount % to clear. Still show margin.
 Return JSON array: [{insight_type:'revenue_leak', insight_text, action_required, priority, item_code}]
 Return JSON only.`

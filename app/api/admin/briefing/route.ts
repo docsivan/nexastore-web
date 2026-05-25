@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
     const prompt = `You are Haya, AI Business Owner of NexaStore.
 Write a concise morning briefing for the owner based on this data:
 
-Yesterday: ${data.yesterday_orders} orders, OMR ${data.yesterday_revenue.toFixed(3)} revenue
+Yesterday: ${data.yesterday_orders} orders, \${data.yesterday_revenue.toFixed(2)} revenue
 Pending dispatch: ${data.pending_dispatch} orders
 Low stock items (${data.low_stock.length}): ${data.low_stock.map(i => `${i.name} (${i.stock} left)`).join(', ') || 'none'}
 Top products last 7 days: ${data.top_products.map(p => `${p.name} (${p.count} units)`).join(', ') || 'no data'}

@@ -77,8 +77,8 @@ function PanelContent({ products, filters, onChange }: Props) {
         <h4 className="overline-label text-primary-dark mb-2 block">Price Range</h4>
         <div className="space-y-2">
           <div className="flex justify-between font-body text-xs text-slate-muted">
-            <span>OMR {filters.minPrice.toFixed(3)}</span>
-            <span>OMR {filters.maxPrice.toFixed(3)}</span>
+            <span>${filters.minPrice.toFixed(2)}</span>
+            <span>${filters.maxPrice.toFixed(2)}</span>
           </div>
           <input
             type="range" min={0} max={100} step={0.001}

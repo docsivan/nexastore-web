@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callSonnet } from '@/lib/claude'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,16 +62,17 @@ interface Translation {
 }
 
 async function translateBatch(products: Product[]): Promise<Translation[]> {
-  const systemPrompt = `You are a professional Arabic medical translator for NexaStore, a global commerce platform.
-Translate product metadata to Modern Standard Arabic (MSA) suitable for Gulf Arabic markets.
+  const storeCtx    = await getStoreContext()
+  const systemPrompt = `You are a professional Arabic translator for ${storeCtx.storeName}, a global commerce platform.
+Translate product metadata to Modern Standard Arabic (MSA).
 Return ONLY a valid JSON array with no markdown, no code fences.
 Each element: { "item_code": string, "meta_title_ar": string (max 60 chars in Arabic), "meta_description_ar": string (120-155 chars in Arabic) }`
 
-  const userPrompt = `Translate these medical supply products to Arabic meta tags for SEO:
+  const userPrompt = `Translate these products to Arabic meta tags for SEO:
 ${products.map(p => `- item_code: ${p.item_code} | name: ${p.name} | category: ${p.category} | description: ${p.description.slice(0, 150)}`).join('\n')}
 
-For meta_title_ar: include the product name + "عُمان" or "مسقط" if space allows.
-For meta_description_ar: include key benefits + "هيات سبلايز" brand mention.`
+For meta_title_ar: include the product name in Arabic (max 60 chars).
+For meta_description_ar: include key benefits and ${storeCtx.storeName} brand mention (120-155 chars).`
 
   const raw     = await callSonnet(userPrompt, systemPrompt)
   const cleaned = raw.replace(/```json|```/g, '').trim()

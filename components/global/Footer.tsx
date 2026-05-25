@@ -66,12 +66,11 @@ export default function Footer() {
             <h4 className="overline-label text-white/50 mb-4 block">Categories</h4>
             <ul className="flex flex-col gap-2">
               {[
-                { label: 'Infection Control', id: 'infection-control' },
-                { label: 'Dental Supplies', id: 'dental-supplies' },
-                { label: 'PPE', id: 'ppe' },
-                { label: 'Diagnostics', id: 'diagnostics' },
-                { label: 'Sterilization', id: 'sterilization' },
-                { label: 'Medical Devices', id: 'medical-devices' },
+                { label: 'Moisturisers', id: 'moisturisers' },
+                { label: 'Serums', id: 'serums' },
+                { label: 'Cleansers', id: 'cleansers' },
+                { label: 'Sunscreen', id: 'sunscreen' },
+                { label: 'Treatments', id: 'treatments' },
               ].map((cat) => (
                 <li key={cat.id}>
                   <Link

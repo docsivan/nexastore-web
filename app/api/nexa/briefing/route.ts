@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callSonnet } from '@/lib/claude'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -126,20 +127,21 @@ export async function GET(req: NextRequest) {
   const top5Products = Object.values(revenueByProduct)
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5)
-    .map(p => `${p.name}: OMR ${p.revenue.toFixed(3)}`)
+    .map(p => `${p.name}: \${p.revenue.toFixed(2)}`)
 
   const urgentContext = {
     low_stock:        criticalLow.map(p => `${p.fields.name} (${p.fields.item_code}): ${p.fields.stock_quantity} units left`),
     out_of_stock:     outOfStock.map(p => `${p.fields.name} (${p.fields.item_code})`),
-    overdue_orders:   overdueOrders.map(o => `${o.fields.order_id} — ${o.fields.customer_name}: OMR ${(o.fields.total ?? 0).toFixed(3)}`),
+    overdue_orders:   overdueOrders.map(o => `${o.fields.order_id} — ${o.fields.customer_name}: \${(o.fields.total ?? 0).toFixed(2)}`),
     pending_dispatch: pendingDispatch.length,
   }
 
+  const storeCtx  = await getStoreContext()
   let urgentAction = ''
   try {
     urgentAction = await callSonnet(
-      `What is the ONE most important action Sivakumar must take today? Max 2 sentences. Be specific with product name and quantity.\n\nData: ${JSON.stringify(urgentContext)}`,
-      'You are Haya, AI business intelligence for NexaStore. Be concise, specific, and decisive.'
+      `What is the ONE most important action the store owner must take today? Max 2 sentences. Be specific with product name and quantity.\n\nData: ${JSON.stringify(urgentContext)}`,
+      `You are the AI business intelligence engine for ${storeCtx.storeName}. Be concise, specific, and decisive.`
     )
   } catch {
     if (outOfStock.length > 0) {
@@ -160,7 +162,7 @@ export async function GET(req: NextRequest) {
   const contextSummary = {
     date:              yesterday.toISOString().split('T')[0],
     yesterday_orders:  orders.length,
-    yesterday_revenue: `OMR ${yesterdayRevenue.toFixed(3)}`,
+    yesterday_revenue: `\${yesterdayRevenue.toFixed(2)}`,
     pending_payments:  pendingPaymentsYest,
     pending_dispatch:  pendingDispatch.length,
     overdue_orders:    overdueOrders.length,
@@ -174,11 +176,11 @@ export async function GET(req: NextRequest) {
   let message = ''
   try {
     message = await callSonnet(
-      `Write a concise WhatsApp morning briefing for the owner Sivakumar. Professional, direct, no fluff. Use emojis for section headers only. End with this exact action sentence: "${urgentAction}" Maximum 500 characters.\n\nData: ${JSON.stringify(contextSummary)}`,
-      'You are Haya, AI Business Engine for NexaStore. Write concise, professional WhatsApp briefings.'
+      `Write a concise WhatsApp morning briefing for the store owner. Professional, direct, no fluff. Use emojis for section headers only. End with this exact action sentence: "${urgentAction}" Maximum 500 characters.\n\nData: ${JSON.stringify(contextSummary)}`,
+      `You are the AI Business Engine for ${storeCtx.storeName}. Write concise, professional WhatsApp briefings.`
     )
   } catch {
-    message = `Good morning Sivakumar! 📊 Yesterday: ${orders.length} orders, OMR ${yesterdayRevenue.toFixed(3)} revenue. 🚚 ${pendingDispatch.length} pending dispatch. ⏰ ${overdueOrders.length} overdue. ⚠️ ${outOfStock.length} out of stock.\n\n👉 ${urgentAction}`
+    message = `Good morning! 📊 Yesterday: ${orders.length} orders, \${yesterdayRevenue.toFixed(2)} revenue. 🚚 ${pendingDispatch.length} pending dispatch. ⏰ ${overdueOrders.length} overdue. ⚠️ ${outOfStock.length} out of stock.\n\n👉 ${urgentAction}`
   }
 
   // Append CFO intelligence block if insights exist

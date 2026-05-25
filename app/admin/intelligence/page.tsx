@@ -58,7 +58,7 @@ type HayaData = { records: HayaInsight[] }
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return `OMR ${n.toFixed(3)}`
+  return `$${n.toFixed(2)}`
 }
 function pct(n: number) {
   return `${n.toFixed(1)}%`

@@ -193,7 +193,7 @@ export default function ProductCard({ product }: Props) {
           {product.discount_percent && product.discount_percent > 0 ? (
             <div className="flex items-baseline gap-2">
               <span className="text-xs line-through text-gray-400 font-body">
-                {product.list_price ? `OMR ${product.list_price.toFixed(3)}` : `OMR ${(product.price / (1 - (product.discount_percent ?? 0) / 100)).toFixed(3)}`}
+                {product.list_price ? `$${product.list_price.toFixed(2)}` : `$${(product.price / (1 - (product.discount_percent ?? 0) / 100)).toFixed(2)}`}
               </span>
               <span className="text-base font-bold text-[#0D0D0D] font-heading">
                 {formatPrice(product.price)}

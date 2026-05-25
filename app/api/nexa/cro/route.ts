@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runCROAgent, CROFix } from '@/lib/nexa-agents'
 import { callSonnet } from '@/lib/claude'
+import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,9 +101,10 @@ async function rewriteProductDescription(itemCode: string): Promise<string | nul
   if (!record) return null
 
   const { name, description, category } = record.fields as Record<string, string>
+  const storeCtx = await getStoreContext()
   const newDesc = await callSonnet(
-    `Rewrite this product description to be more conversion-optimised for a NexaStore. Focus on product benefits and professional use. Max 200 words.\n\nProduct: ${name}\nCategory: ${category}\nCurrent description: ${description ?? '(none)'}`,
-    'You are a product copywriter for NexaStore. Write concise, professional, conversion-focused descriptions. Return only the description text, no labels.'
+    `Rewrite this product description to be more conversion-optimised. Focus on product benefits and professional use. Max 200 words.\n\nProduct: ${name}\nCategory: ${category}\nCurrent description: ${description ?? '(none)'}`,
+    `You are a product copywriter for ${storeCtx.storeName}. Write concise, professional, conversion-focused descriptions. Return only the description text, no labels.`
   )
 
   // PATCH to Airtable

@@ -1,18 +1,18 @@
 export function formatPrice(amount: number, showCurrency = true): string {
-  const formatted = amount.toLocaleString('en-OM', {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
+  const formatted = amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })
-  return showCurrency ? `OMR ${formatted}` : formatted
+  return showCurrency ? `$${formatted}` : formatted
 }
 
 export function formatPriceAr(amount: number): string {
-  return `${amount.toLocaleString('ar-OM', { minimumFractionDigits: 3 })} ر.ع.`
+  return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 }
 
 export function formatDate(dateStr: string, locale: 'en' | 'ar' = 'en'): string {
   const date = new Date(dateStr)
-  return date.toLocaleDateString(locale === 'ar' ? 'ar-OM' : 'en-GB', {
+  return date.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -24,7 +24,7 @@ export function formatOrderId(id: string): string {
 }
 
 export function calculateVat(price: number, rate = 0.05): number {
-  return Math.round(price * rate * 1000) / 1000
+  return Math.round(price * rate * 100) / 100
 }
 
 export function truncateText(text: string, maxLength: number): string {

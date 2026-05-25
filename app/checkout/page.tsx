@@ -22,7 +22,7 @@ export default function CheckoutPage() {
   const [confirmedAddress, setConfirmedAddress] = useState<CustomerAddress | null>(null)
 
   useEffect(() => {
-    clarityEvent('checkout_started', cart.total.toFixed(3))
+    clarityEvent('checkout_started', cart.total.toFixed(2))
   }, [])
 
   if (cart.items.length === 0) {

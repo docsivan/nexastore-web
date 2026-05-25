@@ -61,7 +61,7 @@ export function middleware(req: NextRequest) {
     const rl = checkRateLimit(rlKey(ip,"api"), RATE_CONFIGS.api);
     if (!rl.ok) return addSec(new NextResponse(JSON.stringify({error:"Too many requests"}),{status:429}) as NextResponse);
   }
-  if (pathname.startsWith("/api/") && ["POST","PUT","DELETE","PATCH"].includes(req.method) && !pathname.startsWith("/api/payment/callback")) {
+  if (pathname.startsWith("/api/") && ["POST","PUT","DELETE","PATCH"].includes(req.method) && !pathname.startsWith("/api/payment/callback") && !pathname.startsWith("/api/chat")) {
     if (!originOk(req)) return addSec(new NextResponse(JSON.stringify({error:"Forbidden"}),{status:403,headers:{"Content-Type":"application/json"}}) as NextResponse);
   }
   return addSec(NextResponse.next());

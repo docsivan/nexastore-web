@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return {
       title:       `${record.fields.name} | NexaStore`,
-      description: `${record.fields.brand} · ${record.fields.pack_size} · OMR ${record.fields.final_price.toFixed(3)}`,
+      description: `${record.fields.brand} · ${record.fields.pack_size} · \${record.fields.final_price.toFixed(2)}`,
     }
   } catch {
     return { title: 'Product' }
