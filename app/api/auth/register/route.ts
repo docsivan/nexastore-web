@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       }
     );
     const res = NextResponse.json({ success: true, upgraded: true });
-    res.cookies.set("hs_customer", JSON.stringify({
+    res.cookies.set("ns_customer", JSON.stringify({
       customerId: existing.customer_id, name, phone: existing.phone, email: email || existing.email,
     }), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 30, sameSite: "lax" });
     return res;
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const customer = await createCustomer({ name, phone, email: email || "", password, address });
     const res = NextResponse.json({ success: true, customerId: customer.customer_id });
-    res.cookies.set("hs_customer", JSON.stringify({
+    res.cookies.set("ns_customer", JSON.stringify({
       customerId: customer.customer_id,
       name: customer.customer_name,
       phone: customer.phone,

@@ -3,7 +3,7 @@ import { findCustomerById, updateAddresses } from "@/lib/customer-auth";
 import type { CustomerAddress } from "@/lib/customer-auth";
 
 function getSession(req: NextRequest) {
-  try { return JSON.parse(req.cookies.get("hs_customer")?.value || "{}"); }
+  try { return JSON.parse(req.cookies.get("ns_customer")?.value || "{}"); }
   catch { return {}; }
 }
 

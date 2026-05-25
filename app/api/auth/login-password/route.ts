@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     hasAddress: customer.addresses.length > 0,
     defaultAddress: customer.addresses.find(a => a.isDefault) || null,
   });
-  res.cookies.set("hs_customer", JSON.stringify({
+  res.cookies.set("ns_customer", JSON.stringify({
     customerId: customer.customer_id,
     name: customer.customer_name,
     phone: customer.phone,

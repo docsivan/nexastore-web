@@ -12,7 +12,7 @@ export interface CustomerSession {
   address: string
 }
 
-const CUSTOMER_KEY = 'hs_customer'
+const CUSTOMER_KEY = 'ns_customer'
 const ADMIN_KEY    = 'hs_admin_pin'
 
 export function getCustomerSession(): CustomerSession | null {

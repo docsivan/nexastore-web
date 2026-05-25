@@ -149,7 +149,7 @@ export default function ChatWidget() {
                           setRevealedDisclaimers((prev) => new Set(prev).add(i))
                           setHasAcceptedOnce(true)
                           // Log acceptance to Airtable
-                          const session = typeof window !== 'undefined' ? (() => { try { const s = localStorage.getItem('hs_customer'); return s ? JSON.parse(s) : null } catch { return null } })() : null
+                          const session = typeof window !== 'undefined' ? (() => { try { const s = localStorage.getItem('ns_customer'); return s ? JSON.parse(s) : null } catch { return null } })() : null
                           await fetch('/api/chat/disclaimer', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },

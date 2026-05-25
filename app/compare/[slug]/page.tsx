@@ -1,113 +1,130 @@
-import { notFound }    from 'next/navigation'
-import type { Metadata } from 'next'
-import Link              from 'next/link'
-import { getContentBySlug, getPublishedByCategory, renderMarkdown } from '@/lib/content-helpers'
-import { generateBreadcrumb } from '@/lib/schema'
+import { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
-interface Props {
-  params: { slug: string }
+interface Content {
+  content_id:       string
+  title:            string
+  meta_title:       string
+  meta_description: string
+  category:         string
+  body:             string
+  faq_schema:       string
+  word_count:       number
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const content = await getContentBySlug(params.slug)
-  if (!content || content.status !== 'published') return { title: 'Comparison Not Found' }
-  return {
-    title:       content.meta_title || `${content.title} | NexaStore`,
-    description: content.meta_description,
-    keywords:    content.keywords,
+async function fetchContent(slug: string): Promise<Content | null> {
+  const base = process.env.AIRTABLE_BASE_ID
+  const key  = process.env.AIRTABLE_API_KEY
+  if (!base || !key) return null
+  try {
+    const f   = encodeURIComponent(`AND({content_id}='${slug}',{status}='published',{content_tier}='comparison')`)
+    const res = await fetch(
+      `https://api.airtable.com/v0/${base}/Haya_Content?filterByFormula=${f}&maxRecords=1`,
+      { headers: { Authorization: `Bearer ${key}` }, next: { revalidate: 3600 } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.records?.[0]?.fields || null
+  } catch {
+    return null
   }
 }
 
-export default async function ComparePage({ params }: Props) {
-  const content = await getContentBySlug(params.slug)
-  if (!content || content.status !== 'published') notFound()
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params
+  const c = await fetchContent(slug)
+  if (!c) return { title: 'Comparison | NexaStore' }
+  return {
+    title:       c.meta_title || c.title,
+    description: c.meta_description,
+  }
+}
 
-  const related      = await getPublishedByCategory(content.category, params.slug)
-  const siteDomain   = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? 'nexastore.io'
+function renderMarkdown(text: string): string {
+  return text
+    .replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold text-white mt-10 mb-4 pb-2 border-b border-[#2A2A2A]">$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+    .replace(/^- (.+)$/gm, '<li class="text-[#B0B0B0] mb-2 ml-4 list-disc">$1</li>')
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('<h') || line.startsWith('<li') || line.trim() === '') return line
+      return `<p class="text-[#B0B0B0] leading-relaxed mb-4">${line}</p>`
+    })
+    .join('\n')
+}
 
-  const articleSchema = content.article_schema
-    ? JSON.parse(content.article_schema)
-    : {
-        '@context':    'https://schema.org',
-        '@type':       'Article',
-        headline:      content.title,
-        description:   content.meta_description,
-        author:        { '@type': 'Organization', name: 'NexaStore' },
-        publisher:     { '@type': 'Organization', name: 'NexaStore', url: `https://${siteDomain}` },
-        datePublished: content.published_at || new Date().toISOString(),
-        dateModified:  content.last_updated  || new Date().toISOString(),
-      }
-
-  const faqSchema      = content.faq_schema ? JSON.parse(content.faq_schema) : null
-  const bodyHtml       = renderMarkdown(content.body)
-  const breadcrumbJson = generateBreadcrumb([
-    { name: 'Home',    url: '/' },
-    { name: 'Compare', url: '/guides' },
-    { name: content.title, url: `/compare/${params.slug}` },
-  ])
+export default async function ComparePage(
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params
+  const c = await fetchContent(slug)
+  if (!c) notFound()
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
-      {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson }} />
+      {c.faq_schema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: c.faq_schema }}
+        />
+      )}
+      <main className="min-h-screen bg-[#0D0D0D] text-white">
+        {/* Breadcrumb */}
+        <div className="border-b border-[#2A2A2A] px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center gap-2 text-sm text-[#555]">
+            <Link href="/" className="hover:text-[#F5A623] transition-colors">Home</Link>
+            <span>/</span>
+            <Link href="/guides" className="hover:text-[#F5A623] transition-colors">Guides</Link>
+            <span>/</span>
+            <span className="text-[#A0A0A0]">Compare</span>
+          </div>
+        </div>
 
-      <div className="container-page py-10 pb-16">
-        <nav className="text-xs font-body text-slate-muted mb-6 flex items-center gap-1.5">
-          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/guides" className="hover:text-primary transition-colors">Guides</Link>
-          <span>/</span>
-          <span className="text-slate line-clamp-1">{content.title}</span>
-        </nav>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          <article className="lg:col-span-3">
-            {content.category && (
-              <span className="inline-block text-xs font-body font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent-dark capitalize mb-4">
-                Comparison · {content.category.replace(/-/g, ' ')}
-              </span>
-            )}
-            <h1 className="font-heading text-3xl font-bold text-primary-dark mb-3 leading-tight">{content.title}</h1>
-            {content.meta_description && (
-              <p className="font-body text-slate-muted text-base mb-6 leading-relaxed border-l-4 border-accent/30 pl-4">
-                {content.meta_description}
+        {/* Header */}
+        <header className="border-b border-[#2A2A2A] bg-[#111] py-12 px-4">
+          <div className="max-w-4xl mx-auto">
+            <span className="inline-block text-xs font-semibold text-[#5DADE2] bg-[#5DADE215] px-3 py-1 rounded-full mb-4">
+              vs Comparison
+            </span>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+              {c.title}
+            </h1>
+            {c.meta_description && (
+              <p className="text-[#A0A0A0] text-lg leading-relaxed max-w-2xl">
+                {c.meta_description}
               </p>
             )}
+          </div>
+        </header>
 
-            <div
-              className="prose-content font-body text-slate leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
+        {/* Body */}
+        <article className="max-w-4xl mx-auto px-4 py-12">
+          <div dangerouslySetInnerHTML={{ __html: renderMarkdown(c.body || '') }} />
+        </article>
 
-            <div className="mt-10 bg-primary/5 border border-primary/20 rounded-xl p-6">
-              <h3 className="font-heading font-semibold text-primary-dark mb-2">Shop the products compared above</h3>
-              <Link href={content.category ? `/products?category=${content.category}` : '/products'}
-                className="inline-block px-4 py-2 bg-primary text-white text-sm font-body font-semibold rounded-btn hover:bg-primary-dark transition-colors">
-                Browse {content.category ? content.category.replace(/-/g, ' ') : 'Products'}
-              </Link>
-            </div>
-          </article>
-
-          <aside className="lg:col-span-1">
-            {related.length > 0 && (
-              <div className="bg-surface rounded-xl border border-border p-4 sticky top-24">
-                <h4 className="font-heading font-semibold text-sm text-primary-dark mb-3">More Guides</h4>
-                <div className="flex flex-col gap-2">
-                  {related.map((r) => (
-                    <Link key={r.content_id} href={`/guides/${r.content_id}`}
-                      className="text-sm font-body text-slate hover:text-primary transition-colors py-1 border-b border-border last:border-0">
-                      {r.title}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </aside>
-        </div>
-      </div>
+        {/* CTA */}
+        <section className="border-t border-[#2A2A2A] bg-[#111] py-10 px-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+            <Link
+              href="/guides"
+              className="border border-[#2A2A2A] text-white px-5 py-2.5 rounded-lg hover:border-[#F5A623] hover:text-[#F5A623] transition-all text-sm"
+            >
+              ← More guides
+            </Link>
+            <Link
+              href={`/?category=${encodeURIComponent(c.category)}`}
+              className="bg-[#F5A623] text-black font-semibold px-5 py-2.5 rounded-lg hover:bg-[#E09000] transition-colors text-sm"
+            >
+              Shop {c.category} →
+            </Link>
+          </div>
+        </section>
+      </main>
     </>
   )
 }
