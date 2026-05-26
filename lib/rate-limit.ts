@@ -3,7 +3,7 @@ const store = new Map<string, Entry>();
 export interface RLConfig { limit: number; windowMs: number; blockMs?: number; }
 export const RATE_CONFIGS = {
   auth:  { limit: 10,  windowMs: 60_000,  blockMs: 300_000 } as RLConfig,
-  admin: { limit: 10,  windowMs: 300_000, blockMs: 60_000  } as RLConfig,
+  admin: { limit: 5,   windowMs: 300_000, blockMs: 900_000 } as RLConfig,
   chat:  { limit: 30,  windowMs: 60_000  } as RLConfig,
   cron:  { limit: 5,   windowMs: 60_000  } as RLConfig,
   api:   { limit: 120, windowMs: 60_000  } as RLConfig,

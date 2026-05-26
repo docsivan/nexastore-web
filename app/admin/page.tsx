@@ -83,7 +83,7 @@ export default function AdminPage() {
         const d = await res.json()
         setAuthError(d.attemptsRemaining
           ? `Incorrect PIN — ${d.attemptsRemaining} attempt${d.attemptsRemaining === 1 ? '' : 's'} remaining`
-          : 'Too many attempts — try again in 15 minutes')
+          : 'Too many failed attempts. Please try again later.')
         setAuthLoading(false); return
       }
       sessionStorage.setItem('hs_admin_pin', p)
@@ -151,7 +151,6 @@ export default function AdminPage() {
                 onChange={e => { setPinInput(e.target.value); setAuthError('') }}
                 onKeyDown={e => e.key === 'Enter' && doLogin(pinInput)}
                 placeholder="Enter Admin PIN"
-                maxLength={20}
                 className="input-field w-full"
                 autoFocus
               />
