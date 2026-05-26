@@ -146,23 +146,13 @@ export default function AdminPage() {
           <div className="bg-white rounded-2xl border border-border shadow-sm p-8 space-y-4">
             <div>
               <label className="block text-sm font-body font-medium text-primary-dark mb-2">Admin PIN</label>
-              {/* 4-dot PIN indicator */}
-              <div className="flex justify-center gap-4 mb-4">
-                {[0, 1, 2, 3].map(i => (
-                  <div key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
-                    pinInput.length > i
-                      ? 'bg-primary border-primary'
-                      : 'bg-transparent border-slate-300'
-                  }`} />
-                ))}
-              </div>
-              <input
+                <input
                 type="password" value={pinInput}
-                onChange={e => { setPinInput(e.target.value.slice(0, 4)); setAuthError('') }}
+                onChange={e => { setPinInput(e.target.value); setAuthError('') }}
                 onKeyDown={e => e.key === 'Enter' && doLogin(pinInput)}
-                placeholder="Enter 4-digit PIN"
-                maxLength={4}
-                className="input-field w-full text-center tracking-widest text-lg"
+                placeholder="Enter Admin PIN"
+                maxLength={20}
+                className="input-field w-full"
                 autoFocus
               />
               {authError && <p className="mt-2 text-sm font-body text-red-600">{authError}</p>}
