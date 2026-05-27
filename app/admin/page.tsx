@@ -52,11 +52,8 @@ export default function AdminPage() {
   const [updating, setUpdating] = useState<string | null>(null)
 
   useEffect(() => {
-    const saved = sessionStorage.getItem('hs_admin_pin')
-    if (saved) { setAuthenticated(true); return }
-    fetch('/api/admin/verify', {
-      headers: saved ? { 'x-admin-pin': saved } : {}
-    }).then(r => { if (r.ok) { setAuthenticated(true); loadDashboard() } })
+    fetch('/api/admin/verify')
+      .then(r => { if (r.ok) { setAuthenticated(true); loadDashboard() } })
       .catch(() => {})
   }, [])
 
@@ -74,19 +71,15 @@ export default function AdminPage() {
   const doLogin = async (p: string) => {
     setAuthLoading(true)
     try {
-      const res = await fetch('/api/admin/auth', {
+      const res = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin: p }),
       })
       if (!res.ok) {
-        const d = await res.json()
-        setAuthError(d.attemptsRemaining
-          ? `Incorrect PIN — ${d.attemptsRemaining} attempt${d.attemptsRemaining === 1 ? '' : 's'} remaining`
-          : 'Too many failed attempts. Please try again later.')
+        setAuthError('Incorrect PIN. Please try again.')
         setAuthLoading(false); return
       }
-      sessionStorage.setItem('hs_admin_pin', p)
       setAuthenticated(true)
       loadDashboard()
     } catch {
@@ -119,7 +112,7 @@ export default function AdminPage() {
   }
 
   const handleLogout = async () => {
-    await fetch('/api/admin/auth', { method: 'DELETE' })
+    await fetch('/api/admin/verify', { method: 'DELETE' })
     setAuthenticated(false); setOrders([]); setStats(null)
   }
 
