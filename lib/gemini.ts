@@ -1,41 +1,15 @@
-/**
- * lib/gemini.ts
- * Reusable Gemini Flash 2.0 API client — no SDK dependency.
- * Uses GEMINI_API_KEY from environment variables.
- */
+// Gemini functions re-routed through Groq/OpenRouter fallback chain.
+// No Google API dependency. All signatures preserved.
+import { callSonnet } from './claude'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_MODEL   = 'gemini-2.5-flash'
-const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
-
-// ─── Core generate function ───────────────────────────────────────────────────
 export async function generateContent(
-  prompt: string,
-  temperature = 0.1,
-  maxTokens   = 1024
+  prompt:      string,
+  _temperature = 0.1,
+  _maxTokens   = 1024
 ): Promise<string> {
-  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set')
-
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature, maxOutputTokens: maxTokens, thinkingConfig: { thinkingBudget: 0 } },
-    }),
-    cache: 'no-store',
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Gemini error ${res.status}: ${err}`)
-  }
-
-  const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+  return callSonnet(prompt, 'You are a helpful assistant. Follow the instructions in the prompt exactly and return only what is requested.')
 }
 
-// ─── Product summary type for search context ─────────────────────────────────
 export interface ProductSummary {
   item_code: string
   name:      string
@@ -44,11 +18,6 @@ export interface ProductSummary {
   pack_size: string
 }
 
-// ─── AI-powered product search ────────────────────────────────────────────────
-/**
- * Sends a natural-language query + product catalogue to Gemini Flash.
- * Returns an array of matching item_codes.
- */
 export async function aiSearchProducts(
   query:    string,
   products: ProductSummary[]
@@ -82,9 +51,7 @@ JSON array only:
 ["item_code1", "item_code2"]
 `.trim()
 
-  const raw = await generateContent(prompt, 0.1, 512)
-
-  // Extract JSON array from response
+  const raw   = await generateContent(prompt, 0.1, 512)
   const match = raw.match(/\[[\s\S]*?\]/)
   if (!match) return []
 
@@ -96,7 +63,6 @@ JSON array only:
   }
 }
 
-// ─── Smart WhatsApp message generator ────────────────────────────────────────
 export interface WhatsAppContext {
   type:          'product' | 'cart' | 'order' | 'general'
   productName?:  string
@@ -108,10 +74,6 @@ export interface WhatsAppContext {
   customerName?: string
 }
 
-/**
- * Generates a natural, context-aware WhatsApp opening message
- * that a customer can send to NexaStore.
- */
 export async function generateWhatsAppMessage(ctx: WhatsAppContext): Promise<string> {
   let contextDesc = ''
 
@@ -119,10 +81,11 @@ export async function generateWhatsAppMessage(ctx: WhatsAppContext): Promise<str
     case 'product':
       contextDesc = `The customer is viewing a product: "${ctx.productName}" (SKU: ${ctx.productSku}, Brand: ${ctx.productBrand})`
       break
-    case 'cart':
+    case 'cart': {
       const itemList = ctx.cartItems?.map((i) => `${i.name} x${i.quantity}`).join(', ') ?? ''
       contextDesc = `The customer has these items in their cart: ${itemList}. Total: OMR ${ctx.cartTotal?.toFixed(3)}`
       break
+    }
     case 'order':
       contextDesc = `The customer just placed Order #${ctx.orderId}`
       break

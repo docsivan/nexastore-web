@@ -1,53 +1,66 @@
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
+// AI provider chain — Groq primary, OpenRouter fallback. No Anthropic or Google.
+// Tier 1: Groq llama-3.1-70b-versatile
+// Tier 2: Groq llama-3.1-8b-instant
+// Tier 3: OpenRouter mistralai/mistral-7b-instruct:free
+// Tier 4: OpenRouter meta-llama/llama-3-8b-instruct:free
 
-async function callClaude(
-  model: string,
-  maxTokens: number,
-  prompt: string,
-  systemPrompt: string
+const GROQ_URL       = 'https://api.groq.com/openai/v1/chat/completions'
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+
+type Tier = { url: string; key: string | undefined; model: string; tag: string }
+
+const TIERS: Tier[] = [
+  { url: GROQ_URL,       key: process.env.GROQ_API_KEY,       model: 'llama-3.1-70b-versatile',             tag: 'groq-70b'   },
+  { url: GROQ_URL,       key: process.env.GROQ_API_KEY,       model: 'llama-3.1-8b-instant',                tag: 'groq-8b'    },
+  { url: OPENROUTER_URL, key: process.env.OPENROUTER_API_KEY, model: 'mistralai/mistral-7b-instruct:free',  tag: 'or-mistral' },
+  { url: OPENROUTER_URL, key: process.env.OPENROUTER_API_KEY, model: 'meta-llama/llama-3-8b-instruct:free', tag: 'or-llama'   },
+]
+
+async function callWithFallback(
+  prompt:       string,
+  systemPrompt: string,
+  maxTokens:    number
 ): Promise<string> {
-  const res = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key':         process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-      'Content-Type':      'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: prompt }],
-    }),
-  })
+  let lastError: Error | null = null
 
-  if (!res.ok) {
-    const err = await res.text()
-    const error = new Error(`Claude [${model}] ${res.status}: ${err}`)
-    console.error('[claude]', error.message)
-    throw error
+  for (const tier of TIERS) {
+    if (!tier.key) continue
+    try {
+      const res = await fetch(tier.url, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${tier.key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:      tier.model,
+          max_tokens: maxTokens,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: prompt },
+          ],
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(`[${tier.tag}] ${res.status}: ${err}`)
+      }
+
+      const data = await res.json()
+      const text: string | undefined = data.choices?.[0]?.message?.content
+      if (!text) throw new Error(`[${tier.tag}]: empty content`)
+      return text
+    } catch (err) {
+      console.error(`[ai] ${tier.tag} failed:`, (err as Error).message)
+      lastError = err as Error
+    }
   }
 
-  const data = await res.json()
-  const text = data.content?.[0]?.text
-  if (!text) throw new Error(`Claude [${model}]: empty content`)
-  return text
+  throw lastError ?? new Error('All AI tiers exhausted')
 }
 
-export async function callHaiku(prompt: string, systemPrompt: string): Promise<string> {
-  return callClaude(
-    process.env.CLAUDE_HAIKU_MODEL ?? 'claude-haiku-4-5-20251001',
-    1000,
-    prompt,
-    systemPrompt
-  )
+export function callHaiku(prompt: string, systemPrompt: string): Promise<string> {
+  return callWithFallback(prompt, systemPrompt, 1000)
 }
 
-export async function callSonnet(prompt: string, systemPrompt: string): Promise<string> {
-  return callClaude(
-    process.env.CLAUDE_SONNET_MODEL ?? 'claude-sonnet-4-6',
-    4000,
-    prompt,
-    systemPrompt
-  )
+export function callSonnet(prompt: string, systemPrompt: string): Promise<string> {
+  return callWithFallback(prompt, systemPrompt, 4000)
 }
