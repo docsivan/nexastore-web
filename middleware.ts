@@ -29,19 +29,19 @@ function originOk(req: NextRequest): boolean {
   if (origin && SITE && !origin.startsWith(SITE)) return false;
   return true;
 }
-// Admin pages that must be reachable without a session
-const ADMIN_PUBLIC = ['/admin/login', '/admin/forgot-password', '/admin/reset-password']
+// Admin sub-pages accessible without auth (PIN login is at /admin itself)
+const ADMIN_PUBLIC = ['/admin/forgot-password', '/admin/reset-password']
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = getClientIp(req);
 
-  // Guard all /admin/* page routes — redirect to /admin/login when no session cookie
+  // Guard /admin/* sub-routes — redirect to /admin (PIN login) when not authenticated
   if (pathname.startsWith('/admin/') && !ADMIN_PUBLIC.some(p => pathname.startsWith(p))) {
-    const session = req.cookies.get('nexa_admin_session')?.value ?? ''
-    if (session.length < 30) {
+    const authed = req.cookies.get('adminAuth')?.value === 'true'
+    if (!authed) {
       const url = req.nextUrl.clone()
-      url.pathname = '/admin/login'
+      url.pathname = '/admin'
       return NextResponse.redirect(url)
     }
   }
