@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 function checkAuth(req: NextRequest): boolean {
-  return req.headers.get('x-admin-pin') === process.env.ADMIN_PIN
+  return req.cookies.get('adminAuth')?.value === 'true'
 }
 
 export async function POST(req: NextRequest) {

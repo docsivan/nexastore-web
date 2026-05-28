@@ -9,7 +9,7 @@ const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!
 const ADMIN_PIN = process.env.ADMIN_PIN!
 
 function checkAuth(req: NextRequest): boolean {
-  return req.headers.get('x-admin-pin') === ADMIN_PIN
+  return req.cookies.get('adminAuth')?.value === 'true'
 }
 
 async function fetchAirtable<T>(table: string, params: URLSearchParams): Promise<T[]> {

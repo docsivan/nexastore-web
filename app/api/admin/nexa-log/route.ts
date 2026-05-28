@@ -6,7 +6,7 @@ const API_KEY = process.env.AIRTABLE_API_KEY!
 const BASE_ID = process.env.AIRTABLE_BASE_ID!
 
 function auth(req: NextRequest) {
-  return req.headers.get('x-admin-pin') === process.env.ADMIN_PIN
+  return req.cookies.get('adminAuth')?.value === 'true'
 }
 
 export async function GET(req: NextRequest) {

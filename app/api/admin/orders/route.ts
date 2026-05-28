@@ -3,7 +3,7 @@ import { getAllOrders } from '@/lib/airtable'
 export const dynamic = 'force-dynamic'
 
 function auth(req: NextRequest) {
-  return req.headers.get('x-admin-pin') === process.env.ADMIN_PIN
+  return req.cookies.get('adminAuth')?.value === 'true'
 }
 
 export async function GET(req: NextRequest) {
