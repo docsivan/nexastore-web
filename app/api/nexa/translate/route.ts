@@ -12,8 +12,7 @@ const BATCH_SIZE = 25
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
-  const adminPin   = req.headers.get('x-admin-pin')
-  return cronSecret === process.env.CRON_SECRET || !!adminPin
+  return cronSecret === process.env.CRON_SECRET || req.cookies.get('adminAuth')?.value === 'true'
 }
 
 interface Product {

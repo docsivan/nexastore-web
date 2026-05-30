@@ -3,24 +3,21 @@ import { callSonnet } from '@/lib/claude'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY  = process.env.AIRTABLE_API_KEY!
-const BASE_ID  = process.env.AIRTABLE_BASE_ID!
-const AT_BASE  = `https://api.airtable.com/v0/${BASE_ID}`
-const CSE_KEY  = process.env.GOOGLE_CSE_KEY ?? ''
-const CSE_ID   = process.env.GOOGLE_CSE_ID  ?? ''
+const API_KEY = process.env.AIRTABLE_API_KEY!
+const BASE_ID = process.env.AIRTABLE_BASE_ID!
+const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
-  const adminPin   = req.headers.get('x-admin-pin')
-  return cronSecret === process.env.CRON_SECRET || !!adminPin
+  return cronSecret === process.env.CRON_SECRET || req.cookies.get('adminAuth')?.value === 'true'
 }
 
 const BRAND_QUERIES = [
-  'NexaStore AI commerce',
-  'best AI commerce platform',
-  'infection control supplies global',
-  'dental supplies global distributor',
-  'PPE sterilization supplies global',
+  'NexaStore skincare products online',
+  'derma cosmetics supplier',
+  'beauty supplies online store',
+  'skincare products ecommerce',
+  'NexaStore AI commerce platform',
 ]
 
 interface SerpResult {
@@ -32,39 +29,28 @@ interface SerpResult {
 }
 
 async function checkCitation(query: string): Promise<SerpResult> {
-  if (!CSE_KEY || !CSE_ID) {
-    return { query, cited: false, position: 0, context: 'GOOGLE_CSE_KEY or GOOGLE_CSE_ID not configured', platform: 'google' }
-  }
   try {
-    const params = new URLSearchParams({
-      key: CSE_KEY,
-      cx:  CSE_ID,
-      q:   query,
-      gl:  'om',
-      num: '10',
-    })
-    const res = await fetch(`https://customsearch.googleapis.com/customsearch/v1?${params}`, { cache: 'no-store' })
-    if (!res.ok) return { query, cited: false, position: 0, context: `CSE error ${res.status}`, platform: 'google' }
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`
+    const res = await fetch(url, { cache: 'no-store' })
+    if (!res.ok) return { query, cited: false, position: 0, context: `DDG error ${res.status}`, platform: 'duckduckgo' }
     const data = await res.json()
 
-    const results: Array<{ title?: string; snippet?: string; link?: string }> = data.items ?? []
-    const idx = results.findIndex(
-      r => (r.link ?? '').includes('nexastore') || (r.title ?? '').toLowerCase().includes('nexa')
+    const hasAbstract = data.AbstractText && String(data.AbstractText).length > 0
+    const hasTopics   = Array.isArray(data.RelatedTopics) && data.RelatedTopics.length > 0
+    const found       = hasAbstract || hasTopics
+    const source      = data.AbstractSource ?? (hasTopics ? 'Web' : '')
+    const context     = data.AbstractText
+      ? String(data.AbstractText).slice(0, 200)
+      : (data.RelatedTopics?.[0]?.Text ?? '')
+
+    const cited = found && (
+      String(context).toLowerCase().includes('nexastore') ||
+      String(source).toLowerCase().includes('nexastore')
     )
-    if (idx !== -1) {
-      const r = results[idx]
-      return {
-        query,
-        cited:    true,
-        position: idx + 1,
-        context:  r.snippet ?? r.title ?? '',
-        platform: 'google',
-      }
-    }
-    const topSnippet = results[0]?.snippet ?? results[0]?.title ?? ''
-    return { query, cited: false, position: 0, context: topSnippet, platform: 'google' }
+
+    return { query, cited, position: cited ? 1 : 0, context: String(context).slice(0, 200), platform: 'duckduckgo' }
   } catch (err) {
-    return { query, cited: false, position: 0, context: String(err), platform: 'google' }
+    return { query, cited: false, position: 0, context: String(err), platform: 'duckduckgo' }
   }
 }
 
@@ -125,11 +111,11 @@ Each object: { "insight_type": "geo_gap", "insight_text": string, "action_requir
 
   const userPrompt = `Citation audit results for NexaStore (nexastore.io):
 
-Cited in Google (${cited.length}/${results.length}):
+Cited (${cited.length}/${results.length}):
 ${cited.map(r => `- "${r.query}" — position ${r.position}: ${r.context}`).join('\n') || 'None'}
 
 Not cited (${missing.length}/${results.length}):
-${missing.map(r => `- "${r.query}" — top result: ${r.context}`).join('\n') || 'None'}
+${missing.map(r => `- "${r.query}" — context: ${r.context}`).join('\n') || 'None'}
 
 Generate 3-5 actionable GEO/AEO gap insights to improve NexaStore's presence in AI overviews and search results.`
 

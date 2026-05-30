@@ -7,7 +7,7 @@ const BASE_ID = process.env.AIRTABLE_BASE_ID!
 const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
-  return !!req.headers.get('x-admin-pin')
+  return req.cookies.get('adminAuth')?.value === 'true'
 }
 
 export async function GET(req: NextRequest) {

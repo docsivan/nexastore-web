@@ -16,6 +16,9 @@ export interface StoreContext {
 }
 
 export async function getStoreContext(): Promise<StoreContext> {
+  // Force fresh fetch — remove this line once products confirmed loading
+  _ctx.fetchedAt = null
+
   if (_ctx.data && _ctx.fetchedAt && Date.now() - _ctx.fetchedAt < CACHE_TTL) {
     return _ctx.data
   }
@@ -32,6 +35,20 @@ export async function getStoreContext(): Promise<StoreContext> {
   let promotions = 'None currently'
 
   if (API_KEY && BASE_ID) {
+    // Airtable connectivity test
+    try {
+      const testRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/Products?maxRecords=1`, {
+        headers: { Authorization: `Bearer ${API_KEY}` },
+      })
+      console.log('[ai-context] Airtable status:', testRes.status)
+      if (!testRes.ok) {
+        const body = await testRes.text()
+        console.error('[ai-context] Airtable error body:', body.slice(0, 200))
+      }
+    } catch (testErr) {
+      console.error('[ai-context] Airtable connectivity error:', testErr)
+    }
+
     try {
       const AT      = `https://api.airtable.com/v0/${BASE_ID}`
       const headers = { Authorization: `Bearer ${API_KEY}` }
@@ -49,6 +66,8 @@ export async function getStoreContext(): Promise<StoreContext> {
       if (prodRes.ok) {
         const prodData = await prodRes.json()
         const records  = prodData.records ?? []
+        console.log(`[ai-context] Products fetched: ${records.length}`)
+        if (records.length === 0) console.error('[ai-context] Empty product list — check Airtable base/formula')
 
         const catSet:    Set<string> = new Set()
         const prodLines: string[]    = []
