@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       insight_id:      String(r.fields.insight_id      ?? ''),
       package:         String(r.fields.package         ?? ''),
       insight_type:    String(r.fields.insight_type    ?? r.fields.package ?? ''),
-      insight:         String(r.fields.insight         ?? ''),
+      insight_text:    String(r.fields.insight_text ?? r.fields.insight ?? ''),
       action_required: String(r.fields.action_required ?? ''),
       priority:        Number(r.fields.priority        ?? 0),
       status:          String(r.fields.status          ?? 'new'),
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const new_count     = entries.filter((e: { status: string }) => e.status === 'new').length
     const pattern_count = entries.filter((e: { insight_type: string }) => e.insight_type === 'pattern').length
 
-    return NextResponse.json({ entries, new_count, pattern_count })
+    return NextResponse.json({ insights: entries, new_count, pattern_count })
   } catch {
     return NextResponse.json({ entries: [], new_count: 0, pattern_count: 0 })
   }

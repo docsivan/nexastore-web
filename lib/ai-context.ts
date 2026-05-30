@@ -1,10 +1,10 @@
 // lib/ai-context.ts — Dynamic AI context engine (white-label)
-// Module-level 24-hour cache — warm on the same serverless instance.
+// Module-level cache — 5-minute TTL to pick up product changes quickly.
 const _ctx: { data: StoreContext | null; fetchedAt: number | null } = {
   data: null,
   fetchedAt: null,
 }
-const CACHE_TTL = 24 * 60 * 60 * 1000
+const CACHE_TTL = 5 * 60 * 1000
 
 export interface StoreContext {
   storeName:  string
@@ -72,7 +72,9 @@ export async function getStoreContext(): Promise<StoreContext> {
         if (catSet.size)       categories = Array.from(catSet).join(', ')
         if (promoLines.length) promotions = promoLines.join(', ')
       }
-    } catch {}
+    } catch (err) {
+      console.error('[ai-context] Airtable fetch failed:', err)
+    }
   }
 
   const data: StoreContext = { storeName, aiName, currency, products, categories, promotions }

@@ -12,8 +12,7 @@ const MIN_WORD_COUNT = 800
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
-  const adminPin   = req.headers.get('x-admin-pin')
-  return cronSecret === process.env.CRON_SECRET || adminPin === process.env.ADMIN_PIN
+  return cronSecret === process.env.CRON_SECRET || req.cookies.get('adminAuth')?.value === 'true'
 }
 
 function slugify(text: string): string {

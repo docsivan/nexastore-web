@@ -64,6 +64,10 @@ function resolveImage(image_url: string, product_page_url: string, name: string,
  */
 export function adaptAirtableProduct(ap: AirtableProduct): Product {
   const f = ap.fields as ProductFields & Record<string, unknown>
+  // Airtable single-select fields can return { name: "value" } at runtime
+  const rawCat = (typeof f.category === 'object' && f.category !== null
+    ? (f.category as { name?: string }).name ?? String(f.category)
+    : String(f.category ?? ''))
   const finalPrice = parseFloat(String(f.final_price ?? f.list_price ?? f['Price'] ?? f['price'] ?? f['unit_price'] ?? f['sale_price'] ?? 0)) || 0
   const vatPrice   = Math.round(finalPrice * 1.05 * 100) / 100
 
@@ -72,7 +76,7 @@ export function adaptAirtableProduct(ap: AirtableProduct): Product {
     name:         f.name,
     nameAr:       f.name,                // Arabic name not in schema — falls back to EN
     sku:          f.sku,
-    category:     normaliseCategory(f.category),
+    category:     normaliseCategory(rawCat),
     description:  `${f.brand} · ${f.pack_size}`,
     descriptionAr: `${f.brand} · ${f.pack_size}`,
     price:           finalPrice,
@@ -86,7 +90,7 @@ export function adaptAirtableProduct(ap: AirtableProduct): Product {
     unitSize:     f.pack_size,
     brand:        f.brand,
     origin:       '',
-    tags:         [f.category, f.brand, f.sku].filter(Boolean),
+    tags:         [rawCat, f.brand, f.sku].filter(Boolean),
     featured:     false,
     inStock:      (f.stock_quantity ?? 0) > 0 && f.is_active,
     minOrderQty:  1,
