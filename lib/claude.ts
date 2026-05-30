@@ -10,7 +10,7 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 type Tier = { url: string; key: string | undefined; model: string; tag: string }
 
 const TIERS: Tier[] = [
-  { url: GROQ_URL,       key: process.env.GROQ_API_KEY,       model: 'llama-3.1-70b-versatile',             tag: 'groq-70b'   },
+  { url: GROQ_URL,       key: process.env.GROQ_API_KEY,       model: 'llama-3.3-70b-versatile',             tag: 'groq-70b'   },
   { url: GROQ_URL,       key: process.env.GROQ_API_KEY,       model: 'llama-3.1-8b-instant',                tag: 'groq-8b'    },
   { url: OPENROUTER_URL, key: process.env.OPENROUTER_API_KEY, model: 'mistralai/mistral-7b-instruct:free',  tag: 'or-mistral' },
   { url: OPENROUTER_URL, key: process.env.OPENROUTER_API_KEY, model: 'meta-llama/llama-3-8b-instruct:free', tag: 'or-llama'   },

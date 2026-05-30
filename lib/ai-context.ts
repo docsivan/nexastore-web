@@ -76,7 +76,9 @@ export async function getStoreContext(): Promise<StoreContext> {
         for (const r of records as Array<{ id: string; fields: Record<string, unknown> }>) {
           const f    = r.fields
           const name = String(f.name  ?? '')
-          const cat  = String(f.category ?? '')
+          const cat  = typeof f.category === 'object' && f.category !== null
+            ? ((f.category as { name?: string }).name ?? '')
+            : String(f.category ?? '')
           const price = f.final_price ? Number(f.final_price).toFixed(2) : 'N/A'
           const sku   = String(f.item_code ?? r.id)
           const pack  = f.pack_size ? ` | ${String(f.pack_size)}` : ''
