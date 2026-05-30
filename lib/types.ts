@@ -31,12 +31,7 @@ export interface Product {
 }
 
 // ─── Category ───────────────────────────────────────────────────────────────
-export type ProductCategory =
-  | 'moisturisers'
-  | 'serums'
-  | 'cleansers'
-  | 'sunscreen'
-  | 'treatments'
+export type ProductCategory = string
 
 export interface Category {
   id: ProductCategory

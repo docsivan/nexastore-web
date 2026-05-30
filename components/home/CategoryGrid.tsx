@@ -1,12 +1,9 @@
 import Link from 'next/link'
-import { CATEGORIES } from '@/lib/mockData'
 
-const CATEGORY_CONFIG: Record<string, {
-  from: string
-  to: string
-  icon: React.ReactNode
-}> = {
-  'moisturisers': {
+const CATEGORIES = [
+  {
+    id: 'Skincare',
+    label: 'Skincare',
     from: '#C67B99', to: '#9B3E6B',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -15,7 +12,9 @@ const CATEGORY_CONFIG: Record<string, {
       </svg>
     ),
   },
-  'serums': {
+  {
+    id: 'Serums & Actives',
+    label: 'Serums & Actives',
     from: '#A855F7', to: '#7C3AED',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -25,17 +24,9 @@ const CATEGORY_CONFIG: Record<string, {
       </svg>
     ),
   },
-  'cleansers': {
-    from: '#3B82F6', to: '#1D4ED8',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-        <path d="M8 2h8l2 6H6L8 2z"/>
-        <path d="M6 8v10a2 2 0 002 2h8a2 2 0 002-2V8"/>
-        <path d="M12 12c0 1.7-1.3 3-3 3"/>
-      </svg>
-    ),
-  },
-  'sunscreen': {
+  {
+    id: 'Sun Care',
+    label: 'Sun Care',
     from: '#F59E0B', to: '#D97706',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -44,22 +35,53 @@ const CATEGORY_CONFIG: Record<string, {
       </svg>
     ),
   },
-  'treatments': {
+  {
+    id: 'Cosmetics',
+    label: 'Cosmetics',
+    from: '#EC4899', to: '#BE185D',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+        <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'Body & Hair',
+    label: 'Body & Hair',
     from: '#10B981', to: '#059669',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
         <path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
-        <path d="M12 7V5a2 2 0 00-2-2H8"/>
         <path d="M8 12h8M12 10v4"/>
       </svg>
     ),
   },
-}
+  {
+    id: 'Personal Care',
+    label: 'Personal Care',
+    from: '#3B82F6', to: '#1D4ED8',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+        <path d="M8 2h8l2 6H6L8 2z"/>
+        <path d="M6 8v10a2 2 0 002 2h8a2 2 0 002-2V8"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'Pro Tools',
+    label: 'Pro Tools',
+    from: '#64748B', to: '#334155',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+      </svg>
+    ),
+  },
+]
 
 export default function CategoryGrid() {
   return (
     <section className="container-page py-14">
-      {/* Section header */}
       <div className="flex items-end justify-between mb-8">
         <div>
           <p className="overline-label mb-1.5">Browse</p>
@@ -78,38 +100,29 @@ export default function CategoryGrid() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {CATEGORIES.map((cat, i) => {
-          const cfg = CATEGORY_CONFIG[cat.id] ?? CATEGORY_CONFIG['cleansers']
-          return (
-            <Link
-              key={cat.id}
-              href={`/products?category=${cat.id}`}
-              className="group flex flex-col overflow-hidden rounded-[4px] border border-border bg-white hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-200"
-              style={{ animationDelay: `${i * 60}ms` }}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {CATEGORIES.map((cat, i) => (
+          <Link
+            key={cat.id}
+            href={`/products?category=${encodeURIComponent(cat.id)}`}
+            className="group flex flex-col overflow-hidden rounded-[4px] border border-border bg-white hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-200"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div
+              className="h-20 flex items-center justify-center flex-shrink-0"
+              style={{ background: `linear-gradient(135deg, ${cat.from}, ${cat.to})` }}
             >
-              {/* Gradient icon bar */}
-              <div
-                className="h-20 flex items-center justify-center flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}
-              >
-                <div className="opacity-90 group-hover:scale-110 transition-transform duration-200">
-                  {cfg.icon}
-                </div>
+              <div className="opacity-90 group-hover:scale-110 transition-transform duration-200">
+                {cat.icon}
               </div>
-
-              {/* Label */}
-              <div className="px-3 py-3 flex-1">
-                <p className="font-heading font-semibold text-xs text-primary-dark leading-tight group-hover:text-primary transition-colors">
-                  {cat.label}
-                </p>
-                <p className="overline-label mt-1">
-                  {cat.productCount} products
-                </p>
-              </div>
-            </Link>
-          )
-        })}
+            </div>
+            <div className="px-3 py-3 flex-1">
+              <p className="font-heading font-semibold text-xs text-primary-dark leading-tight group-hover:text-primary transition-colors">
+                {cat.label}
+              </p>
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   )

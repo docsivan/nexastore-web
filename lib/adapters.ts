@@ -8,42 +8,6 @@
 import { AirtableProduct, ProductFields } from './airtableTypes'
 import { Product, ProductCategory } from './types'
 
-const CATEGORY_MAP: Record<string, ProductCategory> = {
-  'moisturisers':  'moisturisers',
-  'moisturiser':   'moisturisers',
-  'moisturizer':   'moisturisers',
-  'moisturizers':  'moisturisers',
-  'serums':        'serums',
-  'serum':         'serums',
-  'cleansers':     'cleansers',
-  'cleanser':      'cleansers',
-  'sunscreen':     'sunscreen',
-  'sun-screen':    'sunscreen',
-  'spf':           'sunscreen',
-  'treatments':    'treatments',
-  'treatment':     'treatments',
-  // Legacy healthcare → cosmetics fallbacks
-  'infection-control':             'moisturisers',
-  'infection control':             'moisturisers',
-  'dental-supplies':               'serums',
-  'dental supplies':               'serums',
-  'dental':                        'serums',
-  'medical-devices':               'cleansers',
-  'medical devices':               'cleansers',
-  'medical':                       'cleansers',
-  'ppe':                           'sunscreen',
-  'personal protective equipment': 'sunscreen',
-  'diagnostics':                   'treatments',
-  'diagnostic':                    'treatments',
-  'sterilization':                 'treatments',
-  'sterilisation':                 'treatments',
-}
-
-function normaliseCategory(raw: string): ProductCategory {
-  if (!raw) return 'cleansers'
-  const key = raw.toLowerCase().trim()
-  return CATEGORY_MAP[key] ?? 'cleansers'
-}
 
 function resolveImage(image_url: string, product_page_url: string, name: string, item_code = ''): string {
   if (image_url) {
@@ -76,7 +40,7 @@ export function adaptAirtableProduct(ap: AirtableProduct): Product {
     name:         f.name,
     nameAr:       f.name,                // Arabic name not in schema — falls back to EN
     sku:          f.sku,
-    category:     normaliseCategory(rawCat),
+    category:     rawCat,
     description:  `${f.brand} · ${f.pack_size}`,
     descriptionAr: `${f.brand} · ${f.pack_size}`,
     price:           finalPrice,
