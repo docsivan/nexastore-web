@@ -22,17 +22,32 @@ interface ProductCard {
   category: string
 }
 
+const AI_NAME       = process.env.NEXT_PUBLIC_AI_NAME       ?? 'AI'
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME ?? 'Store'
+
 const WELCOME: Message = {
   role: "assistant",
-  content: "Hello! I am Nexa, your NexaStore assistant. I can help you find products, check availability, or answer procurement questions. How can I help you today?",
+  content: `Hello! I am ${AI_NAME}, your ${PLATFORM_NAME} assistant. I can help you find products, check availability, or make personalised recommendations. How can I help today?`,
 }
 
-const SUGGESTIONS = [
-  "I need nitrile gloves",
-  "Show me infection control products",
-  "What dental supplies do you have?",
-  "I need sterilization equipment",
+const FALLBACK_SUGGESTIONS = [
+  "Show me our products",
+  "What are your top sellers?",
+  "Show me new arrivals",
+  "Help me find something",
 ]
+
+function Avatar({ size = 'md' }: { size?: 'sm' | 'md' }) {
+  const dim = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9'
+  return (
+    <div
+      className={`${dim} rounded-xl flex items-center justify-center flex-shrink-0`}
+      style={{ background: '#1a1a1a' }}
+    >
+      <span className="font-heading font-bold text-white text-base leading-none">N</span>
+    </div>
+  )
+}
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false)
@@ -44,8 +59,27 @@ export default function ChatWidget() {
   const [sessionId] = useState(() => Math.random().toString(36).slice(2) + Date.now().toString(36))
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [hasAcceptedOnce, setHasAcceptedOnce] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>(FALLBACK_SUGGESTIONS)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const products: Array<{ category?: string }> = data?.products ?? []
+        const seen = new Set<string>()
+        const cats: string[] = []
+        for (const p of products) {
+          if (p.category && !seen.has(p.category) && cats.length < 4) {
+            seen.add(p.category)
+            cats.push(p.category)
+          }
+        }
+        if (cats.length > 0) setSuggestions(cats.map(c => `Show me ${c} products`))
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (open) {
@@ -101,9 +135,7 @@ export default function ChatWidget() {
         >
           <div className="bg-primary px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg">
-                🏥
-              </div>
+              <Avatar />
               <div>
                 <p className="font-heading font-semibold text-white text-sm">Nexa AI</p>
                 <p className="font-body text-white/70 text-xs">NexaStore Assistant</p>
@@ -120,7 +152,6 @@ export default function ChatWidget() {
             </div>
           </div>
 
-          {/* Persistent disclaimer banner */}
           {hasAcceptedOnce && !bannerDismissed && (
             <div className="flex-shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-start justify-between gap-2">
               <p className="text-xs font-body text-amber-700 leading-relaxed">
@@ -129,6 +160,7 @@ export default function ChatWidget() {
               <button onClick={() => setBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 flex-shrink-0 text-sm leading-none mt-0.5">✕</button>
             </div>
           )}
+
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface/50" style={{ minHeight: 0 }}>
             {messages.map((msg, i) => (
               <div key={i} className={msg.role === "user" ? "flex justify-end" : "flex justify-start"}>
@@ -148,7 +180,6 @@ export default function ChatWidget() {
                         onClick={async () => {
                           setRevealedDisclaimers((prev) => new Set(prev).add(i))
                           setHasAcceptedOnce(true)
-                          // Log acceptance to Airtable
                           const session = typeof window !== 'undefined' ? (() => { try { const s = localStorage.getItem('ns_customer'); return s ? JSON.parse(s) : null } catch { return null } })() : null
                           await fetch('/api/chat/disclaimer', {
                             method: 'POST',
@@ -221,7 +252,7 @@ export default function ChatWidget() {
 
             {messages.length === 1 && (
               <div className="flex flex-wrap gap-2 pt-1">
-                {SUGGESTIONS.map((s) => (
+                {suggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => send(s)}
@@ -236,7 +267,6 @@ export default function ChatWidget() {
           </div>
 
           <div className="px-4 py-2 bg-white border-t border-border flex-shrink-0">
-            
             <a
               href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""}`}
               target="_blank"
@@ -283,9 +313,7 @@ export default function ChatWidget() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
+          <Avatar size="sm" />
         )}
         {showDot && !open && (
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-white animate-pulse" />
