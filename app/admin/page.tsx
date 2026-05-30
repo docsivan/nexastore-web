@@ -74,7 +74,7 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: p }),
+        body: JSON.stringify({ pin: p.trim() }),
       })
       if (!res.ok) {
         setAuthError('Incorrect PIN. Please try again.')
