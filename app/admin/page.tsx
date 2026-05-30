@@ -34,7 +34,7 @@ const fmtDate = (d: string) => {
   catch { return d }
 }
 
-type AdminTab = 'orders' | 'stock' | 'customers' | 'flash-sale' | 'briefing' | 'banners' | 'haya'
+type AdminTab = 'orders' | 'stock' | 'customers' | 'flash-sale' | 'briefing' | 'banners' | 'haya' | 'settings'
 
 export default function AdminPage() {
   const [pinInput, setPinInput]           = useState('')
@@ -50,6 +50,9 @@ export default function AdminPage() {
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [secondLang, setSecondLang] = useState('none')
+  const [savingLang, setSavingLang] = useState(false)
+  const [langSaved, setLangSaved] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/verify')
@@ -58,14 +61,31 @@ export default function AdminPage() {
   }, [])
 
   const loadDashboard = async () => {
-    const [sR, oR, iR] = await Promise.allSettled([
+    const [sR, oR, iR, lR] = await Promise.allSettled([
       fetch('/api/admin/stats'),
       fetch('/api/admin/orders'),
       fetch('/api/admin/insights'),
+      fetch('/api/admin/language'),
     ])
     if (sR.status === 'fulfilled' && sR.value.ok) { const d = await sR.value.json(); setStats(d.stats) }
     if (oR.status === 'fulfilled' && oR.value.ok) { const d = await oR.value.json(); setOrders(d.orders || []) }
     if (iR.status === 'fulfilled' && iR.value.ok) { const d = await iR.value.json(); setNewInsightCount(d.new_count ?? 0) }
+    if (lR.status === 'fulfilled' && lR.value.ok) { const d = await lR.value.json(); setSecondLang(d.second_language || 'none') }
+  }
+
+  const saveSecondLang = async (val: string) => {
+    setSavingLang(true)
+    setSecondLang(val)
+    try {
+      await fetch('/api/admin/language', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ second_language: val }),
+      })
+      setLangSaved(true)
+      setTimeout(() => setLangSaved(false), 2000)
+    } catch {}
+    setSavingLang(false)
   }
 
   const doLogin = async (p: string) => {
@@ -173,6 +193,7 @@ export default function AdminPage() {
     { key: 'briefing',   label: 'Briefing' },
     { key: 'banners',    label: 'Banners' },
     { key: 'haya',       label: newInsightCount > 0 ? `Haya Brain (${newInsightCount})` : 'Haya Brain' },
+    { key: 'settings',   label: 'Settings' },
   ]
 
   return (
@@ -333,6 +354,39 @@ export default function AdminPage() {
         {tab === 'briefing'   && authenticated && <NexaBriefing />}
         {tab === 'banners'    && authenticated && <BannerManager />}
         {tab === 'haya'       && authenticated && <NexaControl />}
+
+        {tab === 'settings' && authenticated && (
+          <div className="bg-white rounded-xl border border-border p-6 space-y-6 max-w-lg">
+            <h3 className="font-heading font-semibold text-primary-dark">Language Settings</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-body font-medium text-primary-dark mb-1">Default Language</label>
+                <input value="English" readOnly className="input-field w-full bg-surface text-slate-muted cursor-not-allowed" />
+                <p className="text-xs font-body text-slate-muted mt-1">The store always displays English as the primary language.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-body font-medium text-primary-dark mb-1">Second Language</label>
+                <select
+                  value={secondLang}
+                  onChange={e => saveSecondLang(e.target.value)}
+                  disabled={savingLang}
+                  className="input-field w-full"
+                >
+                  <option value="none">None (English only)</option>
+                  <option value="ar">Arabic (عربي)</option>
+                  <option value="fr">French (FR)</option>
+                  <option value="hi">Hindi (हिंदी)</option>
+                  <option value="ur">Urdu (اردو)</option>
+                </select>
+                {langSaved && <p className="text-xs font-body text-green-600 mt-1">Saved successfully.</p>}
+                {savingLang && <p className="text-xs font-body text-slate-muted mt-1 animate-pulse">Saving...</p>}
+                <p className="text-xs font-body text-slate-muted mt-1">
+                  When set, a language toggle appears in the header for customers.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   )

@@ -177,16 +177,32 @@ interface LanguageContextValue {
   setLang: (lang: Language) => void
   t: TranslationKey
   isRTL: boolean
+  secondLang: string
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>('en')
+  const [secondLang, setSecondLang] = useState<string>('none')
 
   useEffect(() => {
     const saved = localStorage.getItem('nexa_lang') as Language | null
     if (saved === 'ar' || saved === 'en') setLangState(saved)
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/admin/language')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const sl = d?.second_language ?? 'none'
+        setSecondLang(sl)
+        if (sl === 'none' || !sl) {
+          setLangState('en')
+          localStorage.setItem('nexa_lang', 'en')
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const setLang = (l: Language) => {
@@ -208,6 +224,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         setLang,
         t: translations[lang] as TranslationKey,
         isRTL: lang === 'ar',
+        secondLang,
       }}
     >
       {children}
