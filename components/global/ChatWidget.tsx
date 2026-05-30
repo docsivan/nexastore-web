@@ -67,7 +67,7 @@ export default function ChatWidget() {
     fetch('/api/products')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        const products: Array<{ category?: string }> = data?.products ?? []
+        const products: Array<{ category?: string }> = data?.data ?? data?.products ?? []
         const seen = new Set<string>()
         const cats: string[] = []
         for (const p of products) {
