@@ -18,6 +18,25 @@ if (!AIRTABLE_KEY || !SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Airtable allows 5 req/sec per base and enforces a 30s penalty on 429.
+ * Retry with backoff rather than aborting the whole migration.
+ */
+async function airtableFetch(url: string, attempt = 1): Promise<Response> {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${AIRTABLE_KEY}` },
+  })
+  if (res.status === 429 && attempt <= 5) {
+    const wait = 30_000 * attempt
+    console.log(`   ⏳ Rate limited (429) — waiting ${wait / 1000}s, attempt ${attempt}/5`)
+    await sleep(wait)
+    return airtableFetch(url, attempt + 1)
+  }
+  return res
+}
+
 async function fetchAirtable(table: string): Promise<any[]> {
   const records: any[] = []
   let offset: string | undefined
@@ -26,14 +45,15 @@ async function fetchAirtable(table: string): Promise<any[]> {
     const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${encodeURIComponent(
       table
     )}${offset ? `?offset=${offset}` : ''}`
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${AIRTABLE_KEY}` },
-    })
-    if (!res.ok) throw new Error(`Airtable fetch failed: ${res.status}`)
+    const res = await airtableFetch(url)
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`Airtable fetch failed: ${res.status} ${body.slice(0, 200)}`)
+    }
     const data = await res.json()
     records.push(...(data.records ?? []))
     offset = data.offset
-    if (offset) await new Promise((r) => setTimeout(r, 200)) // rate limit
+    if (offset) await sleep(250) // stay under 5 req/sec
   } while (offset)
 
   return records
