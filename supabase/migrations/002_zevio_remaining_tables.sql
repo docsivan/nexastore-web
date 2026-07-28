@@ -90,6 +90,12 @@ alter table products add column if not exists list_price decimal(10,3);
 -- the Airtable Products.notes field.
 alter table products add column if not exists notes text;
 
+-- app/products/[id]/page.tsx reads Arabic metadata and a pre-generated
+-- JSON-LD blob from the Airtable Nexa_SEO table.
+alter table ai_seo add column if not exists meta_title_ar text;
+alter table ai_seo add column if not exists meta_description_ar text;
+alter table ai_seo add column if not exists schema_json text;
+
 -- INDEXES
 create index if not exists idx_banners_active on banners(is_active, display_order);
 create index if not exists idx_ai_reviews_item on ai_reviews(item_code, status);

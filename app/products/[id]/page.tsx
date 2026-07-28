@@ -1,7 +1,7 @@
 import { notFound }   from 'next/navigation'
 import { headers }    from 'next/headers'
 import type { Metadata } from 'next'
-import { getProductByItemCode, getProducts } from '@/lib/supabase'
+import { getProductByItemCode, getProducts, getSEOByItemCode, getPublishedReviews } from '@/lib/supabase'
 import { adaptAirtableProduct, adaptAirtableProducts } from '@/lib/adapters'
 import { generateProductSchema, generateMedicalDeviceSchema, generateBreadcrumb } from '@/lib/schema'
 import Breadcrumbs from '@/components/global/Breadcrumbs'
@@ -30,27 +30,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const isArabic   = acceptLang.toLowerCase().includes('ar')
 
     if (isArabic) {
-      const API_KEY = process.env.AIRTABLE_API_KEY
-      const BASE_ID = process.env.AIRTABLE_BASE_ID
-      if (API_KEY && BASE_ID) {
-        try {
-          const formula = encodeURIComponent(`AND({item_code}="${params.id}",NOT({meta_title_ar}=""))`)
-          const seoRes  = await fetch(
-            `https://api.airtable.com/v0/${BASE_ID}/Nexa_SEO?filterByFormula=${formula}&maxRecords=1`,
-            { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-          )
-          if (seoRes.ok) {
-            const seoData = await seoRes.json()
-            const f       = seoData.records?.[0]?.fields
-            if (f?.meta_title_ar) {
-              return {
-                title:       String(f.meta_title_ar),
-                description: f.meta_description_ar ? String(f.meta_description_ar) : undefined,
-              }
-            }
+      try {
+        const seo = await getSEOByItemCode(params.id)
+        if (seo?.meta_title_ar) {
+          return {
+            title:       String(seo.meta_title_ar),
+            description: seo.meta_description_ar ? String(seo.meta_description_ar) : undefined,
           }
-        } catch {}
-      }
+        }
+      } catch {}
     }
 
     return {
@@ -79,46 +67,26 @@ export default async function ProductDetailPage({ params }: Props) {
       .slice(0, 4)
       .map((p) => p.id)
 
-    // Airtable credentials (used for SEO + reviews lookups)
-    const API_KEY = process.env.AIRTABLE_API_KEY
-    const BASE_ID = process.env.AIRTABLE_BASE_ID
-
     // Fetch reviews for aggregateRating
     let reviewCount    = 0
     let averageRating  = 0
-    if (API_KEY && BASE_ID) {
-      try {
-        const formula  = encodeURIComponent(`AND({item_code}="${product.id}",{published}=TRUE())`)
-        const revRes   = await fetch(
-          `https://api.airtable.com/v0/${BASE_ID}/Haya_Reviews?filterByFormula=${formula}&maxRecords=50`,
-          { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-        )
-        if (revRes.ok) {
-          const revData = await revRes.json()
-          const revs    = revData.records ?? []
-          reviewCount   = revs.length
-          if (reviewCount > 0) {
-            averageRating = revs.reduce((sum: number, r: { fields: { rating?: number } }) => sum + (r.fields.rating ?? 0), 0) / reviewCount
-            averageRating = Math.round(averageRating * 10) / 10
-          }
-        }
-      } catch {}
-    }
+    try {
+      const revs  = await getPublishedReviews(product.id, 50)
+      reviewCount = revs.length
+      if (reviewCount > 0) {
+        averageRating =
+          revs.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviewCount
+        averageRating = Math.round(averageRating * 10) / 10
+      }
+    } catch {}
 
-    // Check Nexa_SEO for pre-generated schema
+    // Check ai_seo for pre-generated schema
     let schemaJson: string | null = null
-    if (API_KEY && BASE_ID) {
-      try {
-        const formula  = encodeURIComponent(`{item_code}="${product.id}"`)
-        const seoRes   = await fetch(
-          `https://api.airtable.com/v0/${BASE_ID}/Nexa_SEO?filterByFormula=${formula}&maxRecords=1`,
-          { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-        )
-        const seoData  = await seoRes.json()
-        const hayaSchema = seoData.records?.[0]?.fields?.schema_json as string | undefined
-        if (hayaSchema && hayaSchema.trim().startsWith('{')) schemaJson = hayaSchema
-      } catch {}
-    }
+    try {
+      const seo = await getSEOByItemCode(product.id)
+      const stored = seo?.schema_json as string | undefined
+      if (stored && stored.trim().startsWith('{')) schemaJson = stored
+    } catch {}
 
     // Fall back to generated schema — MedicalDevice for clinical categories, Product otherwise
     const MEDICAL_DEVICE_CATEGORIES = ['medical-devices', 'sterilization', 'diagnostics']
