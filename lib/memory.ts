@@ -1,10 +1,4 @@
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_URL  = `https://api.airtable.com/v0/${BASE_ID}/Haya_Memory`
-
-function atAuth() {
-  return { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
-}
+import { supabase } from './supabase'
 
 export interface HayaSignal {
   session_id:        string
@@ -20,61 +14,54 @@ export interface HayaSignal {
   chat_summary?:     string
 }
 
+/** Fire-and-forget behavioural signal. Never throws — logging must not break the UI. */
 export async function writeSignal(signal: HayaSignal): Promise<void> {
-  if (!API_KEY || !BASE_ID) return
   try {
-    await fetch(AT_URL, {
-      method: 'POST',
-      headers: atAuth(),
-      body: JSON.stringify({
-        fields: {
-          session_id:        signal.session_id,
-          customer_id:       signal.customer_id       ?? '',
-          customer_segment:  signal.customer_segment  ?? '',
-          signal_type:       signal.signal_type,
-          query:             signal.query             ?? '',
-          item_code:         signal.item_code         ?? '',
-          action:            signal.action,
-          outcome:           signal.outcome           ?? '',
-          page_url:          signal.page_url,
-          cart_total:        signal.cart_total        ?? 0,
-          chat_summary:      signal.chat_summary      ?? '',
-          created_at:        new Date().toISOString(),
-        },
-      }),
+    const { error } = await supabase.from('ai_memory').insert({
+      session_id:       signal.session_id,
+      customer_id:      signal.customer_id      ?? '',
+      customer_segment: signal.customer_segment ?? '',
+      signal_type:      signal.signal_type,
+      query:            signal.query            ?? '',
+      item_code:        signal.item_code        ?? '',
+      action:           signal.action,
+      outcome:          signal.outcome          ?? '',
+      page_url:         signal.page_url,
+      cart_total:       signal.cart_total       ?? 0,
+      chat_summary:     signal.chat_summary     ?? '',
     })
+    if (error) throw error
   } catch (e) {
     console.error('[memory] writeSignal failed (non-fatal):', e)
   }
 }
 
 export async function getCustomerMemory(customer_id: string): Promise<HayaSignal[]> {
-  if (!API_KEY || !BASE_ID) return []
   try {
-    const formula = encodeURIComponent(`{customer_id}='${customer_id}'`)
-    const url = `${AT_URL}?filterByFormula=${formula}&sort[0][field]=created_at&sort[0][direction]=desc&maxRecords=10`
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' })
-    if (!res.ok) return []
-    const data = await res.json()
-    return (data.records ?? []).map((r: { fields: HayaSignal }) => r.fields)
+    const { data, error } = await supabase
+      .from('ai_memory')
+      .select('*')
+      .eq('customer_id', customer_id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+    if (error) return []
+    return (data ?? []) as unknown as HayaSignal[]
   } catch {
     return []
   }
 }
 
 export async function getSessionSearches(session_id: string): Promise<string[]> {
-  if (!API_KEY || !BASE_ID) return []
   try {
-    const formula = encodeURIComponent(
-      `AND({session_id}='${session_id}',{signal_type}='search')`
-    )
-    const url = `${AT_URL}?filterByFormula=${formula}&sort[0][field]=created_at&sort[0][direction]=desc&maxRecords=5`
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' })
-    if (!res.ok) return []
-    const data = await res.json()
-    return (data.records ?? [])
-      .map((r: { fields: { query?: string } }) => r.fields.query ?? '')
-      .filter(Boolean)
+    const { data, error } = await supabase
+      .from('ai_memory')
+      .select('query')
+      .eq('session_id', session_id)
+      .eq('signal_type', 'search')
+      .order('created_at', { ascending: false })
+      .limit(5)
+    if (error) return []
+    return (data ?? []).map((r) => r.query ?? '').filter(Boolean)
   } catch {
     return []
   }

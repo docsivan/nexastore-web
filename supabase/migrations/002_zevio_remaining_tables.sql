@@ -106,6 +106,10 @@ alter table ai_content add column if not exists category text;
 alter table ai_content add column if not exists word_count integer default 0;
 alter table ai_content add column if not exists last_updated timestamptz;
 
+-- lib/memory.ts HayaSignal carries these two beyond migration 001's ai_memory.
+alter table ai_memory add column if not exists cart_total decimal(10,3) default 0;
+alter table ai_memory add column if not exists chat_summary text;
+
 -- INDEXES
 create index if not exists idx_banners_active on banners(is_active, display_order);
 create index if not exists idx_ai_reviews_item on ai_reviews(item_code, status);
