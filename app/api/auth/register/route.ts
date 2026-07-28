@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findCustomerByPhone, createCustomer } from "@/lib/customer-auth";
+import { findCustomerByPhone, createCustomer, setCustomerPassword } from "@/lib/customer-auth";
 import { checkRateLimit, getClientIp, rlKey, rlResponse, RATE_CONFIGS } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -27,15 +27,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Phone number already registered. Please log in." }, { status: 409 });
     }
     // Phone exists (OTP customer) but no password — upgrade account
-    const bcrypt = await import("bcryptjs");
-    const hash = await bcrypt.hash(password, 12);
-    await fetch(
-      `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Customers/${existing.airtableId}`,
-      { method: "PATCH",
-        headers: { Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: { password_hash: hash, customer_name: name, email: email || existing.email } })
-      }
-    );
+    await setCustomerPassword(existing.recordId, password, {
+      customer_name: name,
+      email: email || existing.email,
+    });
     const res = NextResponse.json({ success: true, upgraded: true });
     res.cookies.set("ns_customer", JSON.stringify({
       customerId: existing.customer_id, name, phone: existing.phone, email: email || existing.email,

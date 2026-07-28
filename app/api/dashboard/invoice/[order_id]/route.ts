@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AirtableOrder, OrderFields, OrderItem } from '@/lib/airtableTypes'
+import { OrderFields, OrderItem } from '@/lib/airtableTypes'
+import { getOrderByOrderId } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
-
-const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!
 
 function fmt(n: number) {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -17,20 +15,9 @@ export async function GET(
   const { order_id } = params
 
   try {
-    const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Orders`)
-    url.searchParams.set('filterByFormula', `{order_id}='${order_id}'`)
-    url.searchParams.set('maxRecords', '1')
+    const record = await getOrderByOrderId(order_id)
+    if (!record) return new NextResponse('Not found', { status: 404 })
 
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-      cache: 'no-store',
-    })
-
-    if (!res.ok) return new NextResponse('Not found', { status: 404 })
-    const data = await res.json()
-    if (!data.records?.length) return new NextResponse('Not found', { status: 404 })
-
-    const record = data.records[0] as AirtableOrder
     const f = record.fields as OrderFields
 
     let items: OrderItem[] = []

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   let addresses = customer.addresses.map(a => ({ ...a, isDefault: newAddr.isDefault ? false : a.isDefault }));
   addresses.push(newAddr);
 
-  await updateAddresses(customer.airtableId, addresses);
+  await updateAddresses(customer.recordId, addresses);
   return NextResponse.json({ success: true, address: newAddr, addresses });
 }
 
@@ -72,6 +72,6 @@ export async function PUT(req: NextRequest) {
     addresses[0].isDefault = true;
   }
 
-  await updateAddresses(customer.airtableId, addresses);
+  await updateAddresses(customer.recordId, addresses);
   return NextResponse.json({ success: true, addresses });
 }
