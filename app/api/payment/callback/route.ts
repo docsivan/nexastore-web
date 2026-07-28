@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrderByOrderId, updateOrder, findOrCreateCustomer, recordSuccessfulOrder } from '@/lib/supabase'
+import { getOrderByOrderId, updateOrder, findOrCreateCustomer, recordSuccessfulOrder, updateCustomer } from '@/lib/supabase'
 import { fireMakeWebhook } from '@/lib/makeWebhook'
 import { writeSignal } from '@/lib/memory'
 
 export const dynamic = 'force-dynamic'
-
-const AT_CUSTOMERS = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Customers`
 
 function detectSegment(items: Array<{ name?: string; category?: string }>): string {
   const dentalTerms  = ['dental', 'bur', 'composite', 'impression', 'scaler', 'bonding', 'cement', 'forcep', 'endo', 'prophyl']
@@ -66,19 +64,13 @@ export async function POST(req: NextRequest) {
         f.total
       )
 
-      // ── Detect customer segment and PATCH to Customers table ──────────
+      // ── Detect customer segment and persist it ────────────────────────
       try {
         const parsedItems: Array<{ name?: string; category?: string }> =
           typeof f.items === 'string' ? JSON.parse(f.items) : (f.items ?? [])
         const segment = detectSegment(parsedItems)
-        fetch(`${AT_CUSTOMERS}/${customer.id}`, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ fields: { customer_segment: segment } }),
-        }).catch(() => {})
+        // customer.id is a Supabase row UUID, not an Airtable rec… ID.
+        updateCustomer(customer.id, { customer_segment: segment }).catch(() => {})
       } catch {}
 
       // ── Write order signal to Haya Memory (non-blocking) ──────────────

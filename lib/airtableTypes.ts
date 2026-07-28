@@ -67,6 +67,7 @@ export interface CustomerFields {
   total_spent: number
   preferred_channel: string
   notes: string
+  customer_segment?: string
 }
 
 // ─── Named types ──────────────────────────────────────────────────────────────

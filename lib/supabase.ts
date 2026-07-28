@@ -197,6 +197,100 @@ export async function getLowStockProducts(
   return (data ?? []).map(productToRecord)
 }
 
+// ── Homepage rail queries ─────────────────────────────────
+// Replace the Airtable filterByFormula equivalents used by app/api/homepage/*.
+
+/** Active products with a discount, biggest discount first. */
+export async function getDiscountedProducts(limit = 8): Promise<AirtableProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .gt('discount_percent', 0)
+    .order('discount_percent', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+/** Active products running low but not out of stock, scarcest first. */
+export async function getFastMovingProducts(
+  threshold = 10,
+  limit = 8
+): Promise<AirtableProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .gt('stock_quantity', 0)
+    .lt('stock_quantity', threshold)
+    .order('stock_quantity', { ascending: true })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+/** Active products created in the last `days`, newest first. */
+export async function getNewArrivals(days = 30, limit = 8): Promise<AirtableProduct[]> {
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString()
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+/** Active products for a set of item codes (order not guaranteed). */
+export async function getProductsByItemCodes(
+  item_codes: string[],
+  limit = 8
+): Promise<AirtableProduct[]> {
+  if (!item_codes.length) return []
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .in('item_code', item_codes)
+    .eq('is_active', true)
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+/** Active products across a set of categories — backs the personalised rail. */
+export async function getProductsByCategories(
+  categories: string[],
+  limit = 8
+): Promise<AirtableProduct[]> {
+  if (!categories.length) return []
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .in('category', categories)
+    .eq('is_active', true)
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+/** Orders created since a cutoff — backs the top-sellers rail. */
+export async function getOrdersSince(
+  sinceISO: string,
+  limit = 500
+): Promise<AirtableOrder[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .gte('created_at', sinceISO)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(orderToRecord)
+}
+
 export async function updateProduct(
   item_code: string,
   updates: Record<string, unknown>

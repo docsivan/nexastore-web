@@ -1,35 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adaptAirtableProducts } from '@/lib/adapters'
-import { AirtableOrder, AirtableProduct, OrderFields } from '@/lib/airtableTypes'
+import { OrderFields } from '@/lib/airtableTypes'
+import { getOrdersByPhone, getProductsByCategories } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
-
-const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!
-
-async function fetchAirtable<T>(table: string, params: URLSearchParams): Promise<T[]> {
-  const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(table)}`)
-  url.search = params.toString()
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-    cache: 'no-store',
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.records ?? []
-}
 
 export async function GET(req: NextRequest) {
   const phone = req.nextUrl.searchParams.get('phone')
   if (!phone) return NextResponse.json([])
 
   try {
-    // Fetch customer's last 5 orders
-    const orders = await fetchAirtable<AirtableOrder>('Orders', new URLSearchParams({
-      filterByFormula: `{phone}='${phone.replace(/'/g, "\\'")}'`,
-      sort: JSON.stringify([{ field: 'created_at', direction: 'desc' }]),
-      maxRecords: '5',
-    }))
+    // Customer's last 5 orders (getOrdersByPhone is already newest-first)
+    const orders = (await getOrdersByPhone(phone)).slice(0, 5)
 
     // Count category occurrences
     const catCounts: Record<string, number> = {}
@@ -52,12 +34,7 @@ export async function GET(req: NextRequest) {
 
     if (topCats.length === 0) return NextResponse.json([])
 
-    const formula = `AND({is_active}=1, OR(${topCats.map(c => `{category}='${c}'`).join(',')}))`
-    const products = await fetchAirtable<AirtableProduct>('Products', new URLSearchParams({
-      filterByFormula: formula,
-      maxRecords: '8',
-    }))
-
+    const products = await getProductsByCategories(topCats, 8)
     return NextResponse.json(adaptAirtableProducts(products))
   } catch {
     return NextResponse.json([])
