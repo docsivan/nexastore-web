@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getContentBySlug } from '@/lib/content-helpers'
 
 export const revalidate = 3600
 
@@ -16,18 +17,12 @@ interface Content {
 }
 
 async function fetchContent(slug: string): Promise<Content | null> {
-  const base = process.env.AIRTABLE_BASE_ID
-  const key  = process.env.AIRTABLE_API_KEY
-  if (!base || !key) return null
   try {
-    const f   = encodeURIComponent(`AND({content_id}='${slug}',{status}='published',{content_tier}='comparison')`)
-    const res = await fetch(
-      `https://api.airtable.com/v0/${base}/Haya_Content?filterByFormula=${f}&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${key}` }, next: { revalidate: 3600 } }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.records?.[0]?.fields || null
+    const record = await getContentBySlug(slug)
+    if (!record || record.status !== 'published' || record.content_tier !== 'comparison') {
+      return null
+    }
+    return record as unknown as Content
   } catch {
     return null
   }

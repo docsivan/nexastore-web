@@ -16,71 +16,57 @@ export interface ContentRecord {
   last_updated:     string
 }
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
+import { supabase } from './supabase'
+
+/**
+ * Maps an ai_content row onto ContentRecord.
+ * Airtable's `content_id` is the Supabase `slug`, and `content_tier` is
+ * `content_type`. Pass summary: true for listings, which omit the body.
+ */
+function toContentRecord(row: any, summary = false): ContentRecord {
+  return {
+    record_id:        String(row.id),
+    content_id:       String(row.slug ?? row.id),
+    title:            String(row.title ?? ''),
+    meta_title:       String(row.meta_title ?? row.title ?? ''),
+    meta_description: String(row.meta_description ?? ''),
+    body:             summary ? '' : String(row.body ?? ''),
+    faq_schema:       summary ? '' : String(row.faq_schema ?? ''),
+    article_schema:   summary ? '' : String(row.article_schema ?? ''),
+    keywords:         String(row.keywords ?? ''),
+    content_tier:     String(row.content_type ?? (summary ? '' : 'pillar')),
+    category:         String(row.category ?? ''),
+    status:           String(row.status ?? 'draft'),
+    word_count:       Number(row.word_count ?? 0),
+    published_at:     String(row.published_at ?? ''),
+    last_updated:     String(row.last_updated ?? ''),
+  }
+}
 
 export async function getContentBySlug(slug: string): Promise<ContentRecord | null> {
-  if (!API_KEY || !BASE_ID) return null
   try {
-    const formula = encodeURIComponent(`{content_id}="${slug}"`)
-    const res     = await fetch(
-      `${AT_BASE}/Haya_Content?filterByFormula=${formula}&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    const r    = data.records?.[0]
-    if (!r) return null
-    return {
-      record_id:        r.id,
-      content_id:       String(r.fields.content_id       ?? slug),
-      title:            String(r.fields.title             ?? ''),
-      meta_title:       String(r.fields.meta_title        ?? r.fields.title ?? ''),
-      meta_description: String(r.fields.meta_description  ?? ''),
-      body:             String(r.fields.body               ?? ''),
-      faq_schema:       String(r.fields.faq_schema        ?? ''),
-      article_schema:   String(r.fields.article_schema    ?? ''),
-      keywords:         String(r.fields.keywords          ?? ''),
-      content_tier:     String(r.fields.content_tier      ?? 'pillar'),
-      category:         String(r.fields.category          ?? ''),
-      status:           String(r.fields.status            ?? 'draft'),
-      word_count:       Number(r.fields.word_count        ?? 0),
-      published_at:     String(r.fields.published_at      ?? ''),
-      last_updated:     String(r.fields.last_updated       ?? ''),
-    }
+    const { data, error } = await supabase
+      .from('ai_content')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle()
+    if (error || !data) return null
+    return toContentRecord(data)
   } catch { return null }
 }
 
 export async function getPublishedByCategory(category: string, excludeSlug?: string): Promise<ContentRecord[]> {
-  if (!API_KEY || !BASE_ID) return []
   try {
-    const formula = excludeSlug
-      ? encodeURIComponent(`AND({status}="published",{category}="${category}",{content_id}!="${excludeSlug}")`)
-      : encodeURIComponent(`AND({status}="published",{category}="${category}")`)
-    const res = await fetch(
-      `${AT_BASE}/Haya_Content?filterByFormula=${formula}&maxRecords=6`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    )
-    if (!res.ok) return []
-    const data = await res.json()
-    return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
-      record_id:        r.id,
-      content_id:       String(r.fields.content_id       ?? r.id),
-      title:            String(r.fields.title             ?? ''),
-      meta_title:       String(r.fields.meta_title        ?? r.fields.title ?? ''),
-      meta_description: String(r.fields.meta_description  ?? ''),
-      body:             '',
-      faq_schema:       '',
-      article_schema:   '',
-      keywords:         String(r.fields.keywords          ?? ''),
-      content_tier:     String(r.fields.content_tier      ?? ''),
-      category:         String(r.fields.category          ?? ''),
-      status:           'published',
-      word_count:       Number(r.fields.word_count        ?? 0),
-      published_at:     String(r.fields.published_at      ?? ''),
-      last_updated:     String(r.fields.last_updated       ?? ''),
-    }))
+    let query = supabase
+      .from('ai_content')
+      .select('*')
+      .eq('status', 'published')
+      .eq('category', category)
+      .limit(6)
+    if (excludeSlug) query = query.neq('slug', excludeSlug)
+    const { data, error } = await query
+    if (error) return []
+    return (data ?? []).map((r) => toContentRecord(r, true))
   } catch { return [] }
 }
 

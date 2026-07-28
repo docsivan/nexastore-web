@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { getPublishedContent } from '@/lib/supabase'
 export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'Skincare & Beauty Guides | NexaStore',
@@ -23,14 +24,15 @@ const STATIC:Guide[] = [
   {content_id:'cosmetics-guide',           title:'Cosmetics and Colour: Choosing Products for Your Skin',meta_description:'How to choose foundation, concealer and colour cosmetics for your skin type.',            category:'Cosmetics',        word_count:740},
 ]
 async function fetchGuides():Promise<Guide[]> {
-  const base=process.env.AIRTABLE_BASE_ID; const key=process.env.AIRTABLE_API_KEY
-  if(!base||!key) return STATIC
   try {
-    const f=encodeURIComponent("AND({status}='published',{content_tier}='pillar')")
-    const res=await fetch(`https://api.airtable.com/v0/${base}/Haya_Content?filterByFormula=${f}`,{headers:{Authorization:`Bearer ${key}`},next:{revalidate:3600}})
-    if(!res.ok) return STATIC
-    const data=await res.json()
-    const recs=data.records?.map((r:{fields:Guide})=>r.fields)||[]
+    const rows = await getPublishedContent('pillar')
+    const recs: Guide[] = rows.map((r) => ({
+      content_id:       String(r.slug ?? ''),
+      title:            String(r.title ?? ''),
+      meta_description: String(r.meta_description ?? ''),
+      category:         String(r.category ?? ''),
+      word_count:       Number(r.word_count ?? 0),
+    }))
     return recs.length>0?recs:STATIC
   } catch { return STATIC }
 }

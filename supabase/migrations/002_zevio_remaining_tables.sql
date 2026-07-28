@@ -96,6 +96,16 @@ alter table ai_seo add column if not exists meta_title_ar text;
 alter table ai_seo add column if not exists meta_description_ar text;
 alter table ai_seo add column if not exists schema_json text;
 
+-- lib/content-helpers.ts (guides, compare pages) needs these from the
+-- Airtable Haya_Content table. `content_id` maps onto ai_content.slug and
+-- `content_tier` onto ai_content.content_type, so neither is added here.
+alter table ai_content add column if not exists faq_schema text;
+alter table ai_content add column if not exists article_schema text;
+alter table ai_content add column if not exists keywords text;
+alter table ai_content add column if not exists category text;
+alter table ai_content add column if not exists word_count integer default 0;
+alter table ai_content add column if not exists last_updated timestamptz;
+
 -- INDEXES
 create index if not exists idx_banners_active on banners(is_active, display_order);
 create index if not exists idx_ai_reviews_item on ai_reviews(item_code, status);
