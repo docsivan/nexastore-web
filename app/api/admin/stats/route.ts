@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllOrders, getLowStockProducts } from '@/lib/airtable'
+import { getAllOrders, getLowStockProducts } from '@/lib/supabase'
 export const dynamic = 'force-dynamic'
 
 function auth(req: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPricingTiers } from '@/lib/airtable'
+import { getPricingTiers } from '@/lib/supabase'
 import { DEFAULT_TIERS } from '@/lib/pricingTiers'
 
 export const dynamic = 'force-dynamic'

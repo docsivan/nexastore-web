@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getOrderByOrderId, updateOrder, findOrCreateCustomer, recordSuccessfulOrder } from '@/lib/airtable'
+import { getOrderByOrderId, updateOrder, findOrCreateCustomer, recordSuccessfulOrder } from '@/lib/supabase'
 import { fireMakeWebhook } from '@/lib/makeWebhook'
 import { writeSignal } from '@/lib/memory'
 

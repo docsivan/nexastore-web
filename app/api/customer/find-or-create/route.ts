@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { findOrCreateCustomer } from '@/lib/airtable'
+import { findOrCreateCustomer } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callHaiku } from '@/lib/claude'
 import type { ChatMessage } from '@/lib/groq'
-import { getProducts } from '@/lib/airtable'
+import { getProducts } from '@/lib/supabase'
 import { adaptAirtableProduct } from '@/lib/adapters'
 import { buildMemoryContext } from '@/lib/nexa-context'
 import { sanitizeChatInput } from '@/lib/sanitize'

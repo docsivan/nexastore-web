@@ -1,7 +1,7 @@
 import { notFound }   from 'next/navigation'
 import { headers }    from 'next/headers'
 import type { Metadata } from 'next'
-import { getProductByItemCode, getProducts } from '@/lib/airtable'
+import { getProductByItemCode, getProducts } from '@/lib/supabase'
 import { adaptAirtableProduct, adaptAirtableProducts } from '@/lib/adapters'
 import { generateProductSchema, generateMedicalDeviceSchema, generateBreadcrumb } from '@/lib/schema'
 import Breadcrumbs from '@/components/global/Breadcrumbs'

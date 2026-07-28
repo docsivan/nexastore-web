@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createDisclaimerLog } from '@/lib/airtable'
+import { createDisclaimerLog } from '@/lib/supabase'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {

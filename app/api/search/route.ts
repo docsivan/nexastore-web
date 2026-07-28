@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getProducts } from '@/lib/airtable'
+import { getProducts } from '@/lib/supabase'
 import { aiSearchProducts, ProductSummary } from '@/lib/gemini'
 import { adaptAirtableProducts } from '@/lib/adapters'
 

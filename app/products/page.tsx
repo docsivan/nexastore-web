@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getProducts } from '@/lib/airtable'
+import { getProducts } from '@/lib/supabase'
 import { adaptAirtableProducts } from '@/lib/adapters'
 import { ProductCategory } from '@/lib/types'
 import Breadcrumbs from '@/components/global/Breadcrumbs'

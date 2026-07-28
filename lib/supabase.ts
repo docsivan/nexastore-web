@@ -1,4 +1,42 @@
+/**
+ * lib/supabase.ts
+ * Zevio data layer — Supabase replacement for lib/airtable.ts.
+ *
+ * ─── IMPORTANT: TWO RETURN CONVENTIONS LIVE IN THIS FILE ───────────────────
+ *
+ * 1. LEGACY-COMPATIBLE LAYER (products / orders / customers / pricing_tiers)
+ *    Returns Airtable-shaped records: `{ id, fields: {...}, createdTime }`.
+ *    This exists so the ~332 existing `.fields.x` call sites across the app
+ *    keep working unchanged after the Airtable → Supabase cutover.
+ *    `id` is the Supabase row UUID (it replaces the old `rec…` Airtable ID),
+ *    so `updateOrder(order.id, …)` and `updateCustomer(customer.id, …)`
+ *    still work — they filter on the `id` column.
+ *
+ * 2. ZEVIO-NATIVE LAYER (ai_* tables)
+ *    Returns plain flat rows. These tables have no legacy consumers, so there
+ *    is nothing to stay compatible with.
+ *
+ * Field-name differences handled by the mappers below:
+ *   name_ar/description_ar/category_ar  ->  nameAr/descriptionAr/categoryAr
+ *   orders.items (jsonb)                ->  JSON string (callers JSON.parse it)
+ *   created_at                          ->  createdTime on the record wrapper
+ *
+ * Not present in the Supabase schema (surface as undefined, both are optional
+ * and already have fallbacks at every call site):
+ *   products.list_price, products.breadcrumb
+ */
+
 import { createClient } from '@supabase/supabase-js'
+import type {
+  AirtableRecord,
+  AirtableProduct,
+  AirtableOrder,
+  AirtableCustomer,
+  ProductFields,
+  OrderFields,
+  CustomerFields,
+  OrderItem,
+} from './airtableTypes'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -10,30 +48,124 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey)
 // Client-side client — anon key, safe for browser
 export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
+// ── SHAPE MAPPERS ─────────────────────────────────────────
+
+/** Wraps a flat Supabase row into the Airtable `{ id, fields }` shape. */
+function toRecord<T>(row: Record<string, any>, fields: T): AirtableRecord<T> {
+  return {
+    id: String(row.id),
+    fields,
+    createdTime: row.created_at ?? undefined,
+  }
+}
+
+function productToRecord(row: Record<string, any>): AirtableProduct {
+  const {
+    id,
+    created_at,
+    updated_at,
+    name_ar,
+    description_ar,
+    category_ar,
+    ...rest
+  } = row
+  return toRecord(row, {
+    ...rest,
+    nameAr: name_ar ?? undefined,
+    descriptionAr: description_ar ?? undefined,
+    categoryAr: category_ar ?? undefined,
+  } as unknown as ProductFields)
+}
+
+function orderToRecord(row: Record<string, any>): AirtableOrder {
+  const { id, created_at, items, ...rest } = row
+  return toRecord(row, {
+    ...rest,
+    created_at: created_at ?? '',
+    // Callers JSON.parse this — Supabase stores it as jsonb.
+    items: typeof items === 'string' ? items : JSON.stringify(items ?? []),
+  } as unknown as OrderFields)
+}
+
+function customerToRecord(row: Record<string, any>): AirtableCustomer {
+  const { id, created_at, password_hash, addresses, ...rest } = row
+  return toRecord(row, rest as unknown as CustomerFields)
+}
+
+/** Reverse mapper: `fields`-style keys -> Supabase column names. */
+function productFieldsToColumns(
+  fields: Record<string, unknown>
+): Record<string, unknown> {
+  const { nameAr, descriptionAr, categoryAr, list_price, breadcrumb, ...rest } =
+    fields
+  const out: Record<string, unknown> = { ...rest }
+  if (nameAr !== undefined) out.name_ar = nameAr
+  if (descriptionAr !== undefined) out.description_ar = descriptionAr
+  if (categoryAr !== undefined) out.category_ar = categoryAr
+  return out
+}
+
+function orderFieldsToColumns(
+  fields: Record<string, unknown>
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...fields }
+  // Callers pass items as a JSON string; the column is jsonb.
+  if (typeof out.items === 'string') {
+    try {
+      out.items = JSON.parse(out.items as string)
+    } catch {
+      out.items = []
+    }
+  }
+  return out
+}
+
+// ── ID GENERATORS ─────────────────────────────────────────
+// Airtable auto-generated these. Supabase requires them (NOT NULL UNIQUE).
+
+function generateOrderId(): string {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const rand = Math.random().toString(36).toUpperCase().slice(2, 7)
+  return `ZV-${date}-${rand}`
+}
+
+function generateCustomerId(): string {
+  return `CUS-${Date.now().toString(36).toUpperCase()}`
+}
+
+// ══════════════════════════════════════════════════════════
+// LEGACY-COMPATIBLE LAYER — returns { id, fields }
+// ══════════════════════════════════════════════════════════
+
 // ── PRODUCTS ──────────────────────────────────────────────
 
-export async function getActiveProducts() {
+/** Returns all active products. */
+export async function getProducts(): Promise<AirtableProduct[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('is_active', true)
     .order('display_order', { ascending: false })
   if (error) throw error
-  return data ?? []
+  return (data ?? []).map(productToRecord)
 }
 
-export async function getProductByItemCode(item_code: string) {
+/** Returns a single product by item_code, or null if not found. */
+export async function getProductByItemCode(
+  item_code: string
+): Promise<AirtableProduct | null> {
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('item_code', item_code)
-    .eq('is_active', true)
-    .single()
+    .maybeSingle()
   if (error) throw error
-  return data
+  return data ? productToRecord(data) : null
 }
 
-export async function getProductsByCategory(category: string) {
+export async function getProductsByCategory(
+  category: string
+): Promise<AirtableProduct[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -41,7 +173,28 @@ export async function getProductsByCategory(category: string) {
     .eq('is_active', true)
     .order('display_order', { ascending: false })
   if (error) throw error
-  return data ?? []
+  return (data ?? []).map(productToRecord)
+}
+
+export async function getAllProducts(): Promise<AirtableProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('display_order', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+export async function getLowStockProducts(
+  threshold = 10
+): Promise<AirtableProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .lt('stock_quantity', threshold)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
 }
 
 export async function updateProduct(
@@ -50,112 +203,251 @@ export async function updateProduct(
 ) {
   const { error } = await supabase
     .from('products')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({
+      ...productFieldsToColumns(updates),
+      updated_at: new Date().toISOString(),
+    })
     .eq('item_code', item_code)
   if (error) throw error
 }
 
-export async function getAllProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('display_order', { ascending: false })
-  if (error) throw error
-  return data ?? []
-}
-
 // ── ORDERS ────────────────────────────────────────────────
 
-export async function createOrder(order: Record<string, unknown>) {
+/** Creates a new provisional order and returns it. */
+export async function createOrder(
+  orderData: Partial<OrderFields>
+): Promise<AirtableOrder> {
+  const payload = orderFieldsToColumns({
+    ...orderData,
+    order_id: orderData.order_id || generateOrderId(),
+    payment_status: orderData.payment_status || 'pending',
+    delivery_status: orderData.delivery_status || 'processing',
+  })
   const { data, error } = await supabase
     .from('orders')
-    .insert(order)
+    .insert(payload)
     .select()
     .single()
   if (error) throw error
-  return data
+  return orderToRecord(data)
 }
 
-export async function getOrders(limit = 100) {
+/**
+ * Updates an existing order by row ID (the `id` returned on the record).
+ * Replaces the old Airtable-record-ID behaviour.
+ */
+export async function updateOrder(
+  recordId: string,
+  updateData: Partial<OrderFields>
+): Promise<AirtableOrder> {
+  const { data, error } = await supabase
+    .from('orders')
+    .update(orderFieldsToColumns(updateData))
+    .eq('id', recordId)
+    .select()
+    .single()
+  if (error) throw error
+  return orderToRecord(data)
+}
+
+/** Finds an order by its order_id field value. */
+export async function getOrderByOrderId(
+  order_id: string
+): Promise<AirtableOrder | null> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('order_id', order_id)
+    .maybeSingle()
+  if (error) throw error
+  return data ? orderToRecord(data) : null
+}
+
+export async function getOrdersByPhone(phone: string): Promise<AirtableOrder[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('phone', phone)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map(orderToRecord)
+}
+
+export async function getAllOrders(maxRecords = 500): Promise<AirtableOrder[]> {
   const { data, error } = await supabase
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .limit(maxRecords)
   if (error) throw error
-  return data ?? []
-}
-
-export async function getOrderById(order_id: string) {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('order_id', order_id)
-    .single()
-  if (error) throw error
-  return data
-}
-
-export async function updateOrder(
-  order_id: string,
-  updates: Record<string, unknown>
-) {
-  const { error } = await supabase
-    .from('orders')
-    .update(updates)
-    .eq('order_id', order_id)
-  if (error) throw error
+  return (data ?? []).map(orderToRecord)
 }
 
 // ── CUSTOMERS ─────────────────────────────────────────────
 
-export async function getCustomerByPhone(phone: string) {
-  const { data } = await supabase
+/**
+ * Searches for a customer by phone OR email.
+ * Found → returns existing (created: false). Not found → creates (created: true).
+ */
+export async function findOrCreateCustomer(customerData: {
+  customer_name: string
+  clinic_name?: string
+  phone: string
+  email: string
+  address?: string
+  city?: string
+  preferred_channel?: string
+  notes?: string
+}): Promise<{ customer: AirtableCustomer; created: boolean }> {
+  const { data: existing, error: findError } = await supabase
     .from('customers')
     .select('*')
-    .eq('phone', phone.replace(/\s/g, ''))
-    .single()
-  return data ?? null
-}
+    .or(`phone.eq.${customerData.phone},email.eq.${customerData.email}`)
+    .limit(1)
+    .maybeSingle()
+  if (findError) throw findError
 
-export async function getCustomerById(customer_id: string) {
-  const { data } = await supabase
-    .from('customers')
-    .select('*')
-    .eq('customer_id', customer_id)
-    .single()
-  return data ?? null
-}
+  if (existing) {
+    return { customer: customerToRecord(existing), created: false }
+  }
 
-export async function createCustomer(customer: Record<string, unknown>) {
   const { data, error } = await supabase
     .from('customers')
-    .insert(customer)
+    .insert({
+      customer_id: generateCustomerId(),
+      customer_name: customerData.customer_name,
+      clinic_name: customerData.clinic_name || '',
+      phone: customerData.phone,
+      email: customerData.email,
+      address: customerData.address || '',
+      city: customerData.city || '',
+      preferred_channel: customerData.preferred_channel || '',
+      total_orders: 0,
+      total_spent: 0,
+      notes: customerData.notes || '',
+    })
     .select()
     .single()
   if (error) throw error
-  return data
+  return { customer: customerToRecord(data), created: true }
 }
 
+/** Updates a customer by row ID (the `id` returned on the record). */
 export async function updateCustomer(
-  customer_id: string,
-  updates: Record<string, unknown>
-) {
-  const { error } = await supabase
+  recordId: string,
+  updateData: Partial<CustomerFields>
+): Promise<AirtableCustomer> {
+  const { data, error } = await supabase
     .from('customers')
-    .update(updates)
-    .eq('customer_id', customer_id)
+    .update(updateData)
+    .eq('id', recordId)
+    .select()
+    .single()
   if (error) throw error
+  return customerToRecord(data)
 }
 
-export async function getAllCustomers() {
+/**
+ * Called after a successful payment to increment totals and set last_order_date.
+ */
+export async function recordSuccessfulOrder(
+  customerRecordId: string,
+  currentTotalOrders: number,
+  currentTotalSpent: number,
+  orderTotal: number
+): Promise<AirtableCustomer> {
+  return updateCustomer(customerRecordId, {
+    total_orders: currentTotalOrders + 1,
+    total_spent: Math.round((currentTotalSpent + orderTotal) * 1000) / 1000,
+    last_order_date: new Date().toISOString().slice(0, 10),
+  })
+}
+
+export async function getCustomerByPhone(
+  phone: string
+): Promise<AirtableCustomer | null> {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('phone', phone.replace(/\s/g, ''))
+    .maybeSingle()
+  if (error) throw error
+  return data ? customerToRecord(data) : null
+}
+
+export async function getCustomerById(
+  customer_id: string
+): Promise<AirtableCustomer | null> {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('customer_id', customer_id)
+    .maybeSingle()
+  if (error) throw error
+  return data ? customerToRecord(data) : null
+}
+
+export async function getAllCustomers(): Promise<AirtableCustomer[]> {
   const { data, error } = await supabase
     .from('customers')
     .select('*')
     .order('created_at', { ascending: false })
   if (error) throw error
-  return data ?? []
+  return (data ?? []).map(customerToRecord)
 }
+
+// ── PRICING TIERS ─────────────────────────────────────────
+
+export async function getPricingTiers() {
+  const { data, error } = await supabase
+    .from('pricing_tiers')
+    .select('*')
+    .order('min_quantity', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((row) => {
+    const { id, created_at, ...rest } = row
+    return toRecord(row, rest)
+  })
+}
+
+// ── DISCLAIMER LOGGING ────────────────────────────────────
+// The Zevio schema has no `disclaimers` table — these are routed into ai_log.
+
+export interface DisclaimerFields {
+  session_id: string
+  question: string
+  accepted_at: string
+  customer_phone: string
+  customer_name: string
+  ip_address: string
+  user_agent: string
+}
+
+export async function createDisclaimerLog(
+  data: Partial<DisclaimerFields>
+): Promise<void> {
+  try {
+    const { error } = await supabase.from('ai_log').insert({
+      signal_type: 'disclaimer',
+      session_id: data.session_id,
+      query: data.question,
+      action: 'disclaimer_accepted',
+      target: data.customer_phone,
+      value: data.customer_name,
+      reason: data.user_agent,
+      status: 'logged',
+      timestamp: data.accepted_at || new Date().toISOString(),
+    })
+    if (error) throw error
+  } catch (e) {
+    // Non-blocking — never fail the UI because of logging
+    console.error('[disclaimer log]', e)
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ZEVIO-NATIVE LAYER — returns flat rows (no legacy consumers)
+// ══════════════════════════════════════════════════════════
 
 // ── AI MEMORY ─────────────────────────────────────────────
 
@@ -206,17 +498,6 @@ export async function writeLog(entry: Record<string, unknown>) {
   if (error) console.error('Log write failed:', error)
 }
 
-// ── PRICING TIERS ─────────────────────────────────────────
-
-export async function getPricingTiers() {
-  const { data, error } = await supabase
-    .from('pricing_tiers')
-    .select('*')
-    .order('min_quantity', { ascending: true })
-  if (error) throw error
-  return data ?? []
-}
-
 // ── AI SEO ────────────────────────────────────────────────
 
 export async function getSEOByItemCode(item_code: string) {
@@ -224,7 +505,7 @@ export async function getSEOByItemCode(item_code: string) {
     .from('ai_seo')
     .select('*')
     .eq('item_code', item_code)
-    .single()
+    .maybeSingle()
   return data ?? null
 }
 
@@ -252,12 +533,12 @@ export async function getActivePromotions() {
 // ── AI CONTENT ────────────────────────────────────────────
 
 export async function getPublishedContent(content_type?: string) {
-  let query = supabase
-    .from('ai_content')
-    .select('*')
-    .eq('status', 'published')
+  let query = supabase.from('ai_content').select('*').eq('status', 'published')
   if (content_type) query = query.eq('content_type', content_type)
   const { data, error } = await query.order('published_at', { ascending: false })
   if (error) throw error
   return data ?? []
 }
+
+// ─── Re-export types for convenience (same surface as lib/airtable.ts) ─────
+export type { AirtableProduct, AirtableOrder, AirtableCustomer, OrderItem }

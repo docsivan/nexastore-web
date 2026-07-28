@@ -4,7 +4,7 @@ import {
   updateOrder,
   findOrCreateCustomer,
   recordSuccessfulOrder,
-} from '@/lib/airtable'
+} from '@/lib/supabase'
 import { fireMakeWebhook } from '@/lib/makeWebhook'
 
 export const dynamic = 'force-dynamic'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCustomerByPhone } from '@/lib/airtable'
+import { getCustomerByPhone } from '@/lib/supabase'
 import { otpStore } from '@/lib/otpStore'
 export const dynamic = 'force-dynamic'
 

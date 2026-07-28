@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getProductByItemCode } from '@/lib/airtable'
+import { getProductByItemCode } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
