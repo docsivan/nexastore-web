@@ -291,6 +291,35 @@ export async function getOrdersSince(
   return (data ?? []).map(orderToRecord)
 }
 
+/** All products, lowest stock first — backs the admin stock screen. */
+export async function getProductsByStock(limit = 200): Promise<AirtableProduct[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('stock_quantity', { ascending: true })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(productToRecord)
+}
+
+/**
+ * Updates a product by row ID — the `id` the admin screens receive as
+ * `record_id`. Distinct from updateProduct(), which keys off item_code.
+ */
+export async function updateProductById(
+  id: string,
+  updates: Record<string, unknown>
+) {
+  const { error } = await supabase
+    .from('products')
+    .update({
+      ...productFieldsToColumns(updates),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function updateProduct(
   item_code: string,
   updates: Record<string, unknown>

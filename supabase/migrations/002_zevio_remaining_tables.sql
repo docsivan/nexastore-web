@@ -86,6 +86,10 @@ alter table ai_reviews add column if not exists verified_purchase boolean defaul
 -- scripts/import-products-csv.ts afterwards to backfill it.
 alter table products add column if not exists list_price decimal(10,3);
 
+-- app/api/admin/flash-sale stores {sale_start, sale_end} JSON here, mirroring
+-- the Airtable Products.notes field.
+alter table products add column if not exists notes text;
+
 -- INDEXES
 create index if not exists idx_banners_active on banners(is_active, display_order);
 create index if not exists idx_ai_reviews_item on ai_reviews(item_code, status);
