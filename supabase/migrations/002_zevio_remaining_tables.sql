@@ -75,8 +75,20 @@ create table if not exists disclaimers (
   created_at timestamptz default now()
 );
 
+-- ── Columns migration 001 missed ──────────────────────────
+-- app/api/reviews/* carried these on the Airtable Haya_Reviews table.
+-- `published` maps onto the existing ai_reviews.status ('pending'|'published').
+alter table ai_reviews add column if not exists review_id text unique;
+alter table ai_reviews add column if not exists verified_purchase boolean default false;
+
+-- Strikethrough pricing (components/home/FlashDeals, NewArrivals, ProductCard).
+-- Present in the Airtable export but absent from migration 001; re-run
+-- scripts/import-products-csv.ts afterwards to backfill it.
+alter table products add column if not exists list_price decimal(10,3);
+
 -- INDEXES
 create index if not exists idx_banners_active on banners(is_active, display_order);
+create index if not exists idx_ai_reviews_item on ai_reviews(item_code, status);
 create index if not exists idx_waitlist_email on waitlist(email);
 create index if not exists idx_conversations_session on conversations(session_id);
 create index if not exists idx_conversations_analysed on conversations(analysed, created_at desc);

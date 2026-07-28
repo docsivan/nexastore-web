@@ -592,6 +592,26 @@ export async function writeLog(entry: Record<string, unknown>) {
   if (error) console.error('Log write failed:', error)
 }
 
+// ── AI REVIEWS ────────────────────────────────────────────
+// `status` carries what Airtable modelled as a `published` checkbox.
+
+export async function getPublishedReviews(item_code: string, limit = 50) {
+  const { data, error } = await supabase
+    .from('ai_reviews')
+    .select('*')
+    .eq('item_code', item_code)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createReview(review: Record<string, unknown>) {
+  const { error } = await supabase.from('ai_reviews').insert(review)
+  if (error) throw error
+}
+
 // ── AI SEO ────────────────────────────────────────────────
 
 export async function getSEOByItemCode(item_code: string) {

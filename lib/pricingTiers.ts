@@ -2,16 +2,16 @@
  * lib/pricingTiers.ts
  * Volume discount tier definitions.
  *
- * To use real Airtable tiers, create a "Pricing_Tiers" table with fields:
- *   item_code (text)   — leave blank for category-level tiers
- *   category  (text)   — e.g. "infection-control"
- *   tier_name (text)   — Bronze / Silver / Gold / Platinum
- *   min_qty   (number) — minimum units to qualify
- *   max_qty   (number) — maximum units (blank = unlimited)
- *   discount  (number) — percentage off base final_price
- *   color     (text)   — hex colour for UI badge
+ * Tiers live in the Supabase `pricing_tiers` table:
+ *   tier_name        (text)    — Bronze / Silver / Gold / Platinum
+ *   min_quantity     (int)     — minimum units to qualify
+ *   discount_percent (numeric) — percentage off base final_price
+ *   label            (text)
+ *   color_hex        (text)    — hex colour for UI badge
  *
- * Until that table exists, DEFAULT_TIERS below are used as fallback.
+ * The table is global (no per-item or per-category rows), so the upper bound
+ * of each tier is derived from the next tier's min_quantity.
+ * DEFAULT_TIERS below are the fallback when the table is empty or unreachable.
  */
 
 export interface PricingTier {
@@ -20,6 +20,38 @@ export interface PricingTier {
   min:      number
   max:      number | null
   discount: number      // percentage off
+}
+
+/** Shape of a pricing_tiers row as returned by lib/supabase getPricingTiers(). */
+interface TierFields {
+  tier_name?:        string
+  min_quantity?:     number
+  discount_percent?: number
+  color_hex?:        string
+}
+
+/**
+ * Maps `pricing_tiers` rows to PricingTier[], deriving each tier's `max`
+ * from the next tier's `min_quantity`. Returns null when there is nothing
+ * usable, so callers can fall back to DEFAULT_TIERS.
+ */
+export function mapTierRecords(
+  records: Array<{ fields: TierFields }>
+): PricingTier[] | null {
+  if (!records.length) return null
+  const sorted = [...records].sort(
+    (a, b) => (a.fields.min_quantity ?? 0) - (b.fields.min_quantity ?? 0)
+  )
+  return sorted.map((r, i) => {
+    const nextMin = sorted[i + 1]?.fields.min_quantity
+    return {
+      name:     r.fields.tier_name        ?? 'Standard',
+      color:    r.fields.color_hex        ?? '#6B7280',
+      min:      r.fields.min_quantity     ?? 1,
+      max:      nextMin ? nextMin - 1 : null,
+      discount: r.fields.discount_percent ?? 0,
+    }
+  })
 }
 
 export const DEFAULT_TIERS: PricingTier[] = [
