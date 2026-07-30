@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atList, atCreate } from '@/lib/ai-tables'
+import { getPaidOrdersSince, getAllProducts } from '@/lib/supabase'
 import { runDemandAgent, DemandForecast } from '@/lib/nexa-agents'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -19,38 +18,25 @@ function nanoid(): string {
 type ItemLine = { item_code?: string; quantity?: number; category?: string }
 
 async function fetchNinetyDayOrders() {
-  const since   = new Date(Date.now() - 90 * 86400000).toISOString()
-  const formula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500&fields[]=items&fields[]=created_at`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as Array<{ fields: { items?: string; created_at?: string } }>
+  const since = new Date(Date.now() - 90 * 86400000).toISOString()
+  try {
+    return (await getPaidOrdersSince(since, 500)) as unknown as Array<{ fields: { items?: string; created_at?: string } }>
+  } catch { return [] }
 }
 
 async function fetchProductCategories(): Promise<Record<string, string>> {
-  const res = await fetch(
-    `${AT_BASE}/Products?fields[]=item_code&fields[]=category&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return {}
-  const map: Record<string, string> = {}
-  for (const r of ((await res.json()).records ?? []) as Array<{ fields: { item_code?: string; category?: string } }>) {
-    if (r.fields.item_code) map[r.fields.item_code] = r.fields.category ?? 'Other'
-  }
-  return map
+  try {
+    const map: Record<string, string> = {}
+    for (const r of await getAllProducts()) {
+      if (r.fields.item_code) map[r.fields.item_code] = r.fields.category ?? 'Other'
+    }
+    return map
+  } catch { return {} }
 }
 
 async function fetchTrends() {
-  const res = await fetch(
-    `${AT_BASE}/Haya_Trends?maxRecords=20&sort[0][field]=trend_score&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []).map((r: { fields: Record<string, unknown> }) => ({
+  const data = await atList('Haya_Trends', { limit: 20, orderBy: 'trend_score' })
+  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
     keyword:     String(r.fields.keyword     ?? ''),
     trend_score: Number(r.fields.trend_score ?? 0),
     created_at:  String(r.fields.created_at  ?? ''),
@@ -58,27 +44,23 @@ async function fetchTrends() {
 }
 
 async function fetchPatternInsights() {
-  const formula = encodeURIComponent(
-    `OR({insight_type}="demand_forecast",{insight_type}="inventory_alert")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&maxRecords=10&sort[0][field]=created_at&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    insight_text: String(r.fields.insight_text ?? ''),
-    insight_type: String(r.fields.insight_type ?? ''),
-    created_at:   String(r.fields.created_at   ?? ''),
-  }))
+  // OR across two insight_type values — filtered in JS, PostgREST .in() would
+  // need a separate helper and this list is small.
+  const data = await atList('Nexa_Insights', { limit: 100 })
+  return (data.records ?? [])
+    .filter((r: { fields: Record<string, unknown> }) =>
+      ['demand_forecast', 'inventory_alert'].includes(String(r.fields.insight_type ?? ''))
+    )
+    .slice(0, 10)
+    .map((r: { fields: Record<string, unknown> }) => ({
+      insight_text: String(r.fields.insight_text ?? ''),
+      insight_type: String(r.fields.insight_type ?? ''),
+      created_at:   String(r.fields.created_at   ?? ''),
+    }))
 }
 
 async function writeInsight(forecast: DemandForecast) {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
+  await atCreate('Nexa_Insights', {
         insight_id:      nanoid(),
         insight_type:    'demand_forecast',
         insight_text:    forecast.insight_text,
@@ -87,17 +69,11 @@ async function writeInsight(forecast: DemandForecast) {
         status:          'new',
         data_window:     'last_90_days',
         created_at:      new Date().toISOString().split('T')[0],
-      },
-    }),
-  })
+      })
 }
 
 async function writeInventoryAlert(category: string, forecast: DemandForecast) {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
+  await atCreate('Nexa_Insights', {
         insight_id:      nanoid(),
         insight_type:    'inventory_alert',
         insight_text:    `Rising demand forecast for ${category}: ${forecast.trend}. Pre-stock recommended.`,
@@ -106,9 +82,7 @@ async function writeInventoryAlert(category: string, forecast: DemandForecast) {
         status:          'new',
         data_window:     'forecast_30_days',
         created_at:      new Date().toISOString().split('T')[0],
-      },
-    }),
-  })
+      })
 }
 
 function weekNumber(date: Date): number {
@@ -118,7 +92,6 @@ function weekNumber(date: Date): number {
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   try {
     const [orders, catMap, trends, patternInsights] = await Promise.all([
@@ -184,11 +157,7 @@ export async function GET(req: NextRequest) {
       (f.insight_text ?? '').toLowerCase().match(/within [1-5] week|next [1-5] week|peak in [1-5]/)
     )
     for (const f of urgentForecasts) {
-      await fetch(`${AT_BASE}/Nexa_Insights`, {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fields: {
+      await atCreate('Nexa_Insights', {
             insight_id:      nanoid(),
             insight_type:    'seasonal_warning',
             insight_text:    `⚠️ SEASONAL PEAK WARNING: ${f.insight_text}`,
@@ -197,9 +166,7 @@ export async function GET(req: NextRequest) {
             status:          'new',
             data_window:     'forecast_6_weeks',
             created_at:      now.toISOString().split('T')[0],
-          },
-        }),
-      })
+          })
     }
 
     return NextResponse.json({

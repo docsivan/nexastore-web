@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atList, atCreate, atPatch } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 const MIN_WORD_COUNT = 800
 
@@ -35,13 +33,10 @@ async function selectTopic(): Promise<TopicCandidate | null> {
 
   // Source 1: GSC high-opportunity queries without content
   try {
-    const formula = encodeURIComponent(`AND({content_exists}=FALSE(),{opportunity_score}>50)`)
-    const res     = await fetch(
-      `${AT_BASE}/Haya_Search_Console?filterByFormula=${formula}&sort[0][field]=opportunity_score&sort[0][direction]=desc&maxRecords=5`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
+    const data = await atGetPath(
+      `/Haya_Search_Console?filterByFormula=${encodeURIComponent('AND({content_exists}=FALSE(),{opportunity_score}>50)')}&sort[0][field]=opportunity_score&sort[0][direction]=desc&maxRecords=5`
     )
-    if (res.ok) {
-      const data = await res.json()
+    {
       for (const r of (data.records ?? [])) {
         candidates.push({
           topic:    String(r.fields.query    ?? ''),
@@ -55,13 +50,10 @@ async function selectTopic(): Promise<TopicCandidate | null> {
 
   // Source 2: Rising trend topics without content
   try {
-    const formula = encodeURIComponent(`AND({content_written}=FALSE(),{trend_direction}="rising")`)
-    const res     = await fetch(
-      `${AT_BASE}/Haya_Trends?filterByFormula=${formula}&sort[0][field]=trend_value&sort[0][direction]=desc&maxRecords=5`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
+    const data = await atGetPath(
+      `/Haya_Trends?filterByFormula=${encodeURIComponent('AND({content_written}=FALSE(),{trend_direction}="rising")')}&sort[0][field]=trend_value&sort[0][direction]=desc&maxRecords=5`
     )
-    if (res.ok) {
-      const data = await res.json()
+    {
       for (const r of (data.records ?? [])) {
         candidates.push({
           topic:    String(r.fields.topic    ?? ''),
@@ -75,13 +67,10 @@ async function selectTopic(): Promise<TopicCandidate | null> {
 
   // Source 3: Nexa_Insights with search_gap type
   try {
-    const formula = encodeURIComponent(`AND({insight_type}="search_gap",{status}="new")`)
-    const res     = await fetch(
-      `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=5`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
+    const data = await atGetPath(
+      `/Nexa_Insights?filterByFormula=${encodeURIComponent('AND({insight_type}="search_gap",{status}="new")')}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=5`
     )
-    if (res.ok) {
-      const data = await res.json()
+    {
       for (const r of (data.records ?? [])) {
         const insight = String(r.fields.insight ?? '')
         candidates.push({
@@ -186,11 +175,7 @@ async function saveContent(
   const contentId = slugify(contentData.title || candidate.topic)
   const now       = new Date().toISOString()
 
-  await fetch(`${AT_BASE}/Haya_Content`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      fields: {
+  await atCreate('Haya_Content', {
         content_id:       contentId,
         title:            contentData.title,
         meta_title:       contentData.meta_title,
@@ -206,25 +191,15 @@ async function saveContent(
         source_queries:   candidate.topic,
         published_at:     now,
         last_updated:     now,
-      },
-    }),
-  })
+      })
 
   // Mark GSC query as having content
   if (candidate.source === 'gsc') {
     try {
-      const formula  = encodeURIComponent(`{query}="${candidate.topic.replace(/"/g, '\\"')}"`)
-      const checkRes = await fetch(`${AT_BASE}/Haya_Search_Console?filterByFormula=${formula}&maxRecords=1`, {
-        headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-      })
-      const checkData = await checkRes.json()
+      const checkData = await atList('Haya_Search_Console', { limit: 1, match: { query: candidate.topic } })
       const existing  = checkData.records?.[0]
       if (existing) {
-        await fetch(`${AT_BASE}/Haya_Search_Console/${existing.id}`, {
-          method:  'PATCH',
-          headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ fields: { content_exists: true, content_id: contentId } }),
-        })
+        await atPatch('Haya_Search_Console', existing.id, { content_exists: true, content_id: contentId })
       }
     } catch {}
   }
@@ -232,18 +207,10 @@ async function saveContent(
   // Mark trend as having content
   if (candidate.source === 'trends') {
     try {
-      const formula  = encodeURIComponent(`{topic}="${candidate.topic.replace(/"/g, '\\"')}"`)
-      const checkRes = await fetch(`${AT_BASE}/Haya_Trends?filterByFormula=${formula}&maxRecords=1`, {
-        headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-      })
-      const checkData = await checkRes.json()
+      const checkData = await atList('Haya_Trends', { limit: 1, match: { topic: candidate.topic } })
       const existing  = checkData.records?.[0]
       if (existing) {
-        await fetch(`${AT_BASE}/Haya_Trends/${existing.id}`, {
-          method:  'PATCH',
-          headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ fields: { content_written: true, content_id: contentId } }),
-        })
+        await atPatch('Haya_Trends', existing.id, { content_written: true, content_id: contentId })
       }
     } catch {}
   }
@@ -253,7 +220,6 @@ async function saveContent(
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
 
   try {
     // Phase 1: Topic selection

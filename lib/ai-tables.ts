@@ -41,29 +41,48 @@ const TABLE_MAP: Record<string, string> = {
   Admin_Users:         'admin_users',
 }
 
-/** Field aliases that differ between the Airtable and Supabase schemas. */
-const FIELD_ALIASES: Record<string, string> = {
+/**
+ * Field aliases that differ between the Airtable and Supabase schemas.
+ *
+ * Scoped per table on purpose: `content_id` means the slug on Haya_Content,
+ * but on Haya_Search_Console / Haya_Trends it is a plain reference to a
+ * content row and must be left alone. A global alias would silently rewrite
+ * those to `slug` and write to the wrong column.
+ */
+const GLOBAL_ALIASES: Record<string, string> = {
   nameAr:        'name_ar',
   descriptionAr: 'description_ar',
   categoryAr:    'category_ar',
-  content_id:    'slug',
-  content_tier:  'content_type',
 }
 
-const REVERSE_ALIASES: Record<string, string> = Object.fromEntries(
-  Object.entries(FIELD_ALIASES).map(([k, v]) => [v, k])
-)
+const TABLE_ALIASES: Record<string, Record<string, string>> = {
+  Haya_Content: {
+    content_id:   'slug',
+    content_tier: 'content_type',
+  },
+}
+
+function aliasesFor(table: string): Record<string, string> {
+  return { ...GLOBAL_ALIASES, ...(TABLE_ALIASES[table] ?? {}) }
+}
+
+function reverseAliasesFor(table: string): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(aliasesFor(table)).map(([k, v]) => [v, k])
+  )
+}
 
 export function resolveTable(table: string): string {
   return TABLE_MAP[table] ?? table.toLowerCase()
 }
 
 /** fields (Airtable naming) -> columns (Supabase naming). */
-function toColumns(fields: Record<string, unknown>): Record<string, unknown> {
+function toColumns(fields: Record<string, unknown>, table: string): Record<string, unknown> {
+  const alias = aliasesFor(table)
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(fields)) {
     if (v === undefined) continue
-    out[FIELD_ALIASES[k] ?? k] = v
+    out[alias[k] ?? k] = v
   }
   // orders.items is jsonb; callers hand us a JSON string
   if (typeof out.items === 'string') {
@@ -73,11 +92,12 @@ function toColumns(fields: Record<string, unknown>): Record<string, unknown> {
 }
 
 /** columns (Supabase) -> fields (Airtable naming), plus the id envelope. */
-function toRecord(row: Record<string, any>) {
+function toRecord(row: Record<string, any>, table: string) {
+  const rev = reverseAliasesFor(table)
   const { id, ...rest } = row
   const fields: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(rest)) {
-    fields[REVERSE_ALIASES[k] ?? k] = v
+    fields[rev[k] ?? k] = v
   }
   // Callers JSON.parse orders.items
   if (fields.items !== undefined && typeof fields.items !== 'string') {
@@ -106,13 +126,13 @@ export async function atList(
     let q = supabase.from(resolveTable(table)).select('*')
     if (match) {
       for (const [k, v] of Object.entries(match)) {
-        q = q.eq(FIELD_ALIASES[k] ?? k, v as any)
+        q = q.eq(aliasesFor(table)[k] ?? k, v as any)
       }
     }
     if (since) q = q.gte(orderBy, since)
     const { data, error } = await q.order(orderBy, { ascending }).limit(limit)
     if (error) throw error
-    return { records: (data ?? []).map(toRecord) }
+    return { records: (data ?? []).map((r) => toRecord(r, table)) }
   } catch (e) {
     console.error(`[ai-tables] list ${table} failed:`, e)
     return { records: [] }
@@ -143,7 +163,7 @@ export async function atGetPath(
 
   const sortField = params.get('sort[0][field]')
   if (sortField) {
-    opts.orderBy = FIELD_ALIASES[sortField] ?? sortField
+    opts.orderBy = aliasesFor(table)[sortField] ?? sortField
     opts.ascending = params.get('sort[0][direction]') !== 'desc'
   }
 
@@ -154,7 +174,7 @@ export async function atGetPath(
 
     // IS_AFTER({field},"value") -> since
     for (const m of Array.from(formula.matchAll(/IS_AFTER\(\{(\w+)\}\s*,\s*["']([^"']+)["']\)/g))) {
-      opts.orderBy = FIELD_ALIASES[m[1]] ?? m[1]
+      opts.orderBy = aliasesFor(table)[m[1]] ?? m[1]
       opts.since = m[2]
       consumed += m[0]
     }
@@ -195,7 +215,7 @@ export async function atGetOne(
       .eq('id', id)
       .maybeSingle()
     if (error || !data) return null
-    return toRecord(data)
+    return toRecord(data, table)
   } catch (e) {
     console.error(`[ai-tables] getOne ${table} failed:`, e)
     return null
@@ -210,11 +230,11 @@ export async function atCreate(
   try {
     const { data, error } = await supabase
       .from(resolveTable(table))
-      .insert(toColumns(fields))
+      .insert(toColumns(fields, table))
       .select()
       .single()
     if (error) throw error
-    return toRecord(data)
+    return toRecord(data, table)
   } catch (e) {
     console.error(`[ai-tables] create ${table} failed:`, e)
     return null
@@ -230,7 +250,7 @@ export async function atCreateMany(
   try {
     const { data, error } = await supabase
       .from(resolveTable(table))
-      .insert(rows.map(toColumns))
+      .insert(rows.map((r) => toColumns(r, table)))
       .select('id')
     if (error) throw error
     return (data ?? []).length
@@ -249,7 +269,7 @@ export async function atPatch(
   try {
     const { error } = await supabase
       .from(resolveTable(table))
-      .update(toColumns(fields))
+      .update(toColumns(fields, table))
       .eq('id', id)
     if (error) throw error
     return true
@@ -280,7 +300,7 @@ export async function atUpsert(
   try {
     const { error } = await supabase
       .from(resolveTable(table))
-      .upsert(toColumns(fields), { onConflict })
+      .upsert(toColumns(fields, table), { onConflict })
     if (error) throw error
     return true
   } catch (e) {

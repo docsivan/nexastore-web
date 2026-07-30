@@ -44,3 +44,8 @@ alter table ai_insights add column if not exists source text;
 -- read by lib/ai-context for the chat prompt. Migration 001 only had
 -- description_ar, so the English description had nowhere to live.
 alter table products add column if not exists description text;
+
+-- app/api/nexa/content links generated articles back to their source row.
+alter table ai_content        add column if not exists source_queries text;
+alter table ai_search_console add column if not exists content_id text;
+alter table ai_trends         add column if not exists content_id text;

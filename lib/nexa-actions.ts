@@ -1,6 +1,4 @@
-const API_KEY  = process.env.AIRTABLE_API_KEY!
-const BASE_ID  = process.env.AIRTABLE_BASE_ID!
-const AT_BASE  = `https://api.airtable.com/v0/${BASE_ID}`
+import { atList, atGetOne, atCreate, atPatch } from './ai-tables'
 const MAKE_WH  = process.env.MAKE_DISPATCH_WEBHOOK_URL
 const OWNER_PH = process.env.OWNER_WHATSAPP_NUMBER
 
@@ -17,68 +15,35 @@ export interface HayaInsight {
   customer_id?:    string
 }
 
-function atHeaders() {
-  return { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
-}
-
 async function writeHayaLog(fields: Record<string, string>) {
-  if (!API_KEY || !BASE_ID) return
-  await fetch(`${AT_BASE}/Nexa_Log`, {
-    method:  'POST',
-    headers: atHeaders(),
-    body:    JSON.stringify({ fields: { timestamp: new Date().toISOString(), ...fields } }),
-  }).catch(() => {})
+  await atCreate('Nexa_Log', { timestamp: new Date().toISOString(), ...fields })
 }
 
 async function fetchCustomer(id: string): Promise<{ name: string; phone: string; clinic: string } | null> {
-  try {
-    const res = await fetch(`${AT_BASE}/Customers/${id}`, {
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      cache:   'no-store',
-    })
-    if (!res.ok) return null
-    const d = await res.json()
-    return {
-      name:   String(d.fields?.customer_name ?? ''),
-      phone:  String(d.fields?.phone         ?? ''),
-      clinic: String(d.fields?.clinic_name   ?? ''),
-    }
-  } catch {
-    return null
+  const rec = await atGetOne('Customers', id)
+  if (!rec) return null
+  return {
+    name:   String(rec.fields.customer_name ?? ''),
+    phone:  String(rec.fields.phone ?? ''),
+    clinic: String(rec.fields.clinic_name ?? ''),
   }
 }
 
 async function fetchProduct(itemCode: string): Promise<{ name: string; stock: number; brand: string; recordId: string } | null> {
-  const formula = encodeURIComponent(`{item_code}='${itemCode}'`)
-  try {
-    const res = await fetch(`${AT_BASE}/Products?filterByFormula=${formula}&maxRecords=1`, {
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      cache:   'no-store',
-    })
-    if (!res.ok) return null
-    const d   = await res.json()
-    const rec = d.records?.[0]
-    if (!rec) return null
-    return {
-      name:     String(rec.fields?.name           ?? ''),
-      stock:    Number(rec.fields?.stock_quantity  ?? 0),
-      brand:    String(rec.fields?.brand           ?? ''),
-      recordId: String(rec.id),
-    }
-  } catch {
-    return null
+  const d   = await atList('Products', { limit: 1, match: { item_code: itemCode } })
+  const rec = d.records?.[0]
+  if (!rec) return null
+  return {
+    name:     String(rec.fields.name ?? ''),
+    stock:    Number(rec.fields.stock_quantity ?? 0),
+    brand:    String(rec.fields.brand ?? ''),
+    recordId: rec.id,
   }
 }
 
 async function getLastOrderDaysAgo(phone: string): Promise<number> {
-  const formula = encodeURIComponent(`{phone}='${phone}'`)
   try {
-    const res = await fetch(
-      `${AT_BASE}/Orders?filterByFormula=${formula}&sort[0][field]=created_at&sort[0][direction]=desc&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    )
-    if (!res.ok) return 30
-    const d    = await res.json()
+    const d    = await atList('Orders', { limit: 1, match: { phone } })
     const date = d.records?.[0]?.fields?.created_at as string | undefined
     if (!date) return 30
     return Math.max(1, Math.round((Date.now() - new Date(date).getTime()) / 86400000))
@@ -88,17 +53,14 @@ async function getLastOrderDaysAgo(phone: string): Promise<number> {
 }
 
 async function isRateLimited(customerId: string, itemCode: string): Promise<boolean> {
-  const since   = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const formula = encodeURIComponent(
-    `AND({action}='reorder_reminder_sent',{target}='${customerId}',{field}='${itemCode}',IS_AFTER({timestamp},"${since}"))`
-  )
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   try {
-    const res = await fetch(`${AT_BASE}/Nexa_Log?filterByFormula=${formula}&maxRecords=1`, {
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      cache:   'no-store',
+    const d = await atList('Nexa_Log', {
+      limit: 1,
+      orderBy: 'timestamp',
+      since,
+      match: { action: 'reorder_reminder_sent', target: customerId, field: itemCode },
     })
-    if (!res.ok) return false
-    const d = await res.json()
     return (d.records ?? []).length > 0
   } catch {
     return false
@@ -161,11 +123,7 @@ export async function handleMerchandisingUpdate(insight: HayaInsight): Promise<v
   const product = await fetchProduct(itemCode)
   if (!product?.recordId) return
 
-  await fetch(`${AT_BASE}/Products/${product.recordId}`, {
-    method:  'PATCH',
-    headers: atHeaders(),
-    body:    JSON.stringify({ fields: { display_order: 1, haya_badge: 'TRENDING' } }),
-  }).catch(() => {})
+  await atPatch('Products', product.recordId, { display_order: 1, haya_badge: 'TRENDING' })
 
   await writeHayaLog({
     trigger_type: 'merchandising',
@@ -189,11 +147,7 @@ export async function handleStockAlert(insight: HayaInsight): Promise<void> {
   if (OWNER_PH) await sendWhatsApp(OWNER_PH, message, 'stock_alert')
 
   if (product?.recordId) {
-    await fetch(`${AT_BASE}/Products/${product.recordId}`, {
-      method:  'PATCH',
-      headers: atHeaders(),
-      body:    JSON.stringify({ fields: { haya_badge: 'LOW STOCK' } }),
-    }).catch(() => {})
+    await atPatch('Products', product.recordId, { haya_badge: 'LOW STOCK' })
   }
 
   await writeHayaLog({
@@ -229,29 +183,22 @@ export async function handleSearchGap(insight: HayaInsight): Promise<void> {
     return
   }
 
-  const searchFormula = encodeURIComponent(
-    `OR(SEARCH("${query}",LOWER({name}))>0,SEARCH("${query}",LOWER({category}))>0)`
-  )
+  // Substring match on name or category — Airtable's SEARCH() has no direct
+  // PostgREST equivalent through the adapter, so it is done in JS.
   let hasMatch = false
   try {
-    const res = await fetch(`${AT_BASE}/Products?filterByFormula=${searchFormula}&maxRecords=1`, {
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      cache:   'no-store',
+    const d = await atList('Products', { limit: 500 })
+    hasMatch = (d.records ?? []).some((r: { fields: Record<string, unknown> }) => {
+      const name = String(r.fields.name ?? '').toLowerCase()
+      const cat  = String(r.fields.category ?? '').toLowerCase()
+      return name.includes(query) || cat.includes(query)
     })
-    if (res.ok) {
-      const d  = await res.json()
-      hasMatch = (d.records ?? []).length > 0
-    }
   } catch {}
 
   const today     = new Date().toISOString().split('T')[0].replace(/-/g, '')
   const insightId = `INSIGHT-${today}-GAP-${Date.now().toString(36).toUpperCase()}`
 
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: atHeaders(),
-    body:    JSON.stringify({
-      fields: {
+  await atCreate('Nexa_Insights', {
         insight_id:      insightId,
         package:         hasMatch ? 'search_gap'    : 'catalogue_gap',
         insight_type:    hasMatch ? 'search_gap'    : 'catalogue_gap',
@@ -264,9 +211,7 @@ export async function handleSearchGap(insight: HayaInsight): Promise<void> {
         priority:        hasMatch ? 3 : 4,
         status:          'new',
         created_at:      new Date().toISOString(),
-      },
-    }),
-  }).catch(() => {})
+      })
 
   await writeHayaLog({
     trigger_type: 'search_gap',
