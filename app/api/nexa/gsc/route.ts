@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atList, atCreate, atPatch } from '@/lib/ai-tables'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -55,27 +53,17 @@ async function getAccessToken(serviceAccount: { client_email: string; private_ke
   return data.access_token
 }
 
+/** Refreshes the row for this (query, data_range) pair, or creates it. */
 async function upsertRow(row: Record<string, unknown>) {
-  const formula   = encodeURIComponent(`AND({query}="${(row.query as string).replace(/"/g, '\\"')}",{data_range}="${row.data_range}")`)
-  const checkRes  = await fetch(`${AT_BASE}/Haya_Search_Console?filterByFormula=${formula}&maxRecords=1`, {
-    headers: { Authorization: `Bearer ${API_KEY}` },
-    cache:   'no-store',
+  const check = await atList('Haya_Search_Console', {
+    limit: 1,
+    match: { query: row.query, data_range: row.data_range },
   })
-  const checkData = await checkRes.json()
-  const existing  = checkData.records?.[0]
-
+  const existing = check.records?.[0]
   if (existing) {
-    await fetch(`${AT_BASE}/Haya_Search_Console/${existing.id}`, {
-      method:  'PATCH',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: row }),
-    })
+    await atPatch('Haya_Search_Console', existing.id, row)
   } else {
-    await fetch(`${AT_BASE}/Haya_Search_Console`, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: row }),
-    })
+    await atCreate('Haya_Search_Console', row)
   }
 }
 
@@ -87,8 +75,6 @@ export async function GET(req: NextRequest) {
     console.warn('[GSC] GOOGLE_SEARCH_CONSOLE_KEY_JSON not set — skipping')
     return NextResponse.json({ skipped: true, reason: 'GSC key not configured' })
   }
-
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
 
   try {
     const serviceAccount = JSON.parse(gscKeyJson)

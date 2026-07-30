@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStoreContext } from '@/lib/ai-context'
+import { atList, atCreate, atPatch } from '@/lib/ai-tables'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY     = process.env.AIRTABLE_API_KEY!
-const BASE_ID     = process.env.AIRTABLE_BASE_ID!
-const AT_BASE     = `https://api.airtable.com/v0/${BASE_ID}`
 const TRENDS_URL  = process.env.TRENDS_SERVER_URL ?? 'http://localhost:5001'
 
 async function buildTopics(): Promise<Array<{ topic: string; category: string }>> {
@@ -49,34 +47,25 @@ async function fetchTrends(topic: string, geo = 'GLOBAL', weeks = 12): Promise<T
   }
 }
 
+/** Refreshes this week's row for a topic, or creates one. */
 async function upsertTrend(row: Record<string, unknown>) {
-  const cutoff  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const formula = encodeURIComponent(`AND({topic}="${(row.topic as string).replace(/"/g, '\\"')}",IS_AFTER({fetched_at},"${cutoff}"))`)
-  const check   = await fetch(`${AT_BASE}/Haya_Trends?filterByFormula=${formula}&maxRecords=1`, {
-    headers: { Authorization: `Bearer ${API_KEY}` },
-    cache:   'no-store',
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const check = await atList('Haya_Trends', {
+    limit: 1,
+    orderBy: 'fetched_at',
+    since: cutoff,
+    match: { topic: row.topic },
   })
-  const data     = await check.json()
-  const existing = data.records?.[0]
-
+  const existing = check.records?.[0]
   if (existing) {
-    await fetch(`${AT_BASE}/Haya_Trends/${existing.id}`, {
-      method:  'PATCH',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: row }),
-    })
+    await atPatch('Haya_Trends', existing.id, row)
   } else {
-    await fetch(`${AT_BASE}/Haya_Trends`, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: row }),
-    })
+    await atCreate('Haya_Trends', row)
   }
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
 
   // Health-check the Python server first
   let serverOnline = false
