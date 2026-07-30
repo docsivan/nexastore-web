@@ -54,6 +54,9 @@ alter table ai_promotions add column if not exists promo_discount decimal(5,2);
 alter table ai_promotions add column if not exists original_discount decimal(5,2);
 alter table ai_promotions add column if not exists approved_by text;
 
+-- ai_trends — app/api/intelligence/seo sorts on trend_score
+alter table ai_trends add column if not exists trend_score decimal(6,2);
+
 -- ai_cro — app/api/nexa/cro
 alter table ai_cro add column if not exists session_count integer default 0;
 alter table ai_cro add column if not exists data_window text;

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getPaidOrdersSince, getAllProducts } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest) {
   return req.cookies.get('adminAuth')?.value === 'true'
@@ -35,25 +33,15 @@ type ItemLine = {
 }
 
 async function fetchProducts(): Promise<ProductRec[]> {
-  const fields = ['item_code', 'name', 'category', 'final_price', 'cost_price']
-  const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&')
-  const res = await fetch(`${AT_BASE}/Products?${qs}&maxRecords=500`, {
-    headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-  })
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as ProductRec[]
+  try {
+    return (await getAllProducts()) as unknown as ProductRec[]
+  } catch { return [] }
 }
 
 async function fetchPaidOrdersSince(since: string): Promise<OrderRec[]> {
-  const formula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as OrderRec[]
+  try {
+    return (await getPaidOrdersSince(since, 500)) as unknown as OrderRec[]
+  } catch { return [] }
 }
 
 function parseItems(json: string): ItemLine[] {
@@ -62,7 +50,6 @@ function parseItems(json: string): ItemLine[] {
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   const monthStart = new Date()
   monthStart.setDate(1)

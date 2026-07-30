@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getPaidOrdersSince, getOrdersSince, readAiTable, asRecords } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest) {
   return req.cookies.get('adminAuth')?.value === 'true'
@@ -36,48 +34,35 @@ type CROSignal = {
 }
 
 async function fetchOrders(since: string): Promise<{ paid: OrderRec[]; abandoned: OrderRec[] }> {
-  const paidFormula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const abandFormula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="pending")`
-  )
-  const [paidRes, abandRes] = await Promise.all([
-    fetch(`${AT_BASE}/Orders?filterByFormula=${paidFormula}&maxRecords=500`, {
-      headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-    }),
-    fetch(`${AT_BASE}/Orders?filterByFormula=${abandFormula}&maxRecords=500`, {
-      headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-    }),
-  ])
-  const paid      = paidRes.ok   ? ((await paidRes.json()).records  ?? []) as OrderRec[] : []
-  const abandoned = abandRes.ok  ? ((await abandRes.json()).records ?? []) as OrderRec[] : []
-  return { paid, abandoned }
+  try {
+    const [paid, pending] = await Promise.all([
+      getPaidOrdersSince(since, 500),
+      getOrdersSince(since, 500),
+    ])
+    return {
+      paid: paid as unknown as OrderRec[],
+      // "abandoned" == still pending payment
+      abandoned: pending.filter(
+        (o) => o.fields.payment_status === 'pending'
+      ) as unknown as OrderRec[],
+    }
+  } catch { return { paid: [], abandoned: [] } }
 }
 
 async function fetchHayaLog(since: string): Promise<HayaLogRec[]> {
-  const formula = encodeURIComponent(`IS_AFTER({created_at},"${since}")`)
-  const res = await fetch(
-    `${AT_BASE}/Nexa_Log?filterByFormula=${formula}&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as HayaLogRec[]
+  try {
+    return asRecords(await readAiTable('ai_log', { since, limit: 500 })) as unknown as HayaLogRec[]
+  } catch { return [] }
 }
 
 async function fetchCROSignals(since: string): Promise<CROSignal[]> {
-  const formula = encodeURIComponent(`IS_AFTER({created_at},"${since}")`)
-  const res = await fetch(
-    `${AT_BASE}/Nexa_CRO?filterByFormula=${formula}&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as CROSignal[]
+  try {
+    return asRecords(await readAiTable('ai_cro', { since, limit: 500 })) as unknown as CROSignal[]
+  } catch { return [] }
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   const now        = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()

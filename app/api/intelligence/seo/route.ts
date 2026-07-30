@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { readAiTable, asRecords } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest) {
   return req.cookies.get('adminAuth')?.value === 'true'
@@ -52,45 +50,37 @@ type TrendRec = {
 }
 
 async function fetchHayaSEO(): Promise<HayaSEORec[]> {
-  const res = await fetch(
-    `${AT_BASE}/Nexa_SEO?maxRecords=500&sort[0][field]=created_at&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as HayaSEORec[]
+  try {
+    return asRecords(await readAiTable('ai_seo', { limit: 500 })) as unknown as HayaSEORec[]
+  } catch { return [] }
 }
 
 async function fetchGSC(): Promise<GSCRec[]> {
-  const res = await fetch(
-    `${AT_BASE}/Haya_Search_Console?maxRecords=100&sort[0][field]=impressions&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as GSCRec[]
+  try {
+    return asRecords(
+      await readAiTable('ai_search_console', { limit: 100, orderBy: 'impressions' })
+    ) as unknown as GSCRec[]
+  } catch { return [] }
 }
 
 async function fetchTrends(): Promise<TrendRec[]> {
-  const res = await fetch(
-    `${AT_BASE}/Haya_Trends?maxRecords=50&sort[0][field]=trend_score&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as TrendRec[]
+  try {
+    return asRecords(
+      await readAiTable('ai_trends', { limit: 50, orderBy: 'trend_score' })
+    ) as unknown as TrendRec[]
+  } catch { return [] }
 }
 
 async function fetchSEOInsights(): Promise<HayaInsightRec[]> {
-  const formula = encodeURIComponent(`{insight_type}="cro_problem"`)
-  const res = await fetch(
-    `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&maxRecords=10&sort[0][field]=created_at&sort[0][direction]=desc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as HayaInsightRec[]
+  try {
+    return asRecords(
+      await readAiTable('ai_insights', { limit: 100, match: { insight_type: 'cro_problem' } })
+    ) as unknown as HayaInsightRec[]
+  } catch { return [] }
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   const [seoRecords, gscRecords, trendRecords, insights] = await Promise.all([
     fetchHayaSEO(),

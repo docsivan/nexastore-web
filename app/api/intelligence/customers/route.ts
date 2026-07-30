@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getPaidOrdersSince } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest) {
   return req.cookies.get('adminAuth')?.value === 'true'
@@ -22,20 +20,13 @@ type OrderRec = {
 }
 
 async function fetchPaidOrdersSince(since: string): Promise<OrderRec[]> {
-  const formula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as OrderRec[]
+  try {
+    return (await getPaidOrdersSince(since, 500)) as unknown as OrderRec[]
+  } catch { return [] }
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   const now         = new Date()
   const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()

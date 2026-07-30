@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getPaidOrdersSince, getAllProducts } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest) {
   return req.cookies.get('adminAuth')?.value === 'true'
@@ -31,30 +29,19 @@ type ItemLine = {
 }
 
 async function fetchOrdersSince(since: string): Promise<OrderRec[]> {
-  const formula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.records ?? []
+  try {
+    return (await getPaidOrdersSince(since, 500)) as unknown as OrderRec[]
+  } catch { return [] }
 }
 
 async function fetchProductCategories(): Promise<Record<string, string>> {
-  const res = await fetch(
-    `${AT_BASE}/Products?fields[]=item_code&fields[]=category&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return {}
-  const data = await res.json()
-  const map: Record<string, string> = {}
-  for (const r of (data.records ?? [])) {
-    if (r.fields.item_code) map[r.fields.item_code] = r.fields.category ?? 'Other'
-  }
-  return map
+  try {
+    const map: Record<string, string> = {}
+    for (const r of await getAllProducts()) {
+      if (r.fields.item_code) map[r.fields.item_code] = r.fields.category ?? 'Other'
+    }
+    return map
+  } catch { return {} }
 }
 
 function parseItems(json: string): ItemLine[] {
@@ -67,7 +54,6 @@ function sumOrders(orders: OrderRec[]) {
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   const now       = new Date()
   const todayStart   = isoDate(startOf(now))
@@ -78,16 +64,10 @@ export async function GET(req: NextRequest) {
 
   const [monthOrders, lastMonthOrders, catMap] = await Promise.all([
     fetchOrdersSince(monthStart),
-    // last month: fetch since lastMoStart, filter to before lastMoEnd
+    // last month: fetch since lastMoStart, then bound to before lastMoEnd
     (async () => {
-      const formula = encodeURIComponent(
-        `AND(IS_AFTER({created_at},"${lastMoStart}"),IS_BEFORE({created_at},"${lastMoEnd}"),{payment_status}="paid")`
-      )
-      const res = await fetch(`${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500`, {
-        headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store'
-      })
-      if (!res.ok) return []
-      return ((await res.json()).records ?? []) as OrderRec[]
+      const rows = await fetchOrdersSince(lastMoStart)
+      return rows.filter(o => (o.fields.created_at ?? '') < lastMoEnd)
     })(),
     fetchProductCategories(),
   ])

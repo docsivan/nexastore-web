@@ -291,6 +291,67 @@ export async function getOrdersSince(
   return (data ?? []).map(orderToRecord)
 }
 
+// ── Analytics reads ───────────────────────────────────────
+// Back app/api/intelligence/* and the nexa/* analyst routes. All read-only.
+
+/** Paid orders since a cutoff. */
+export async function getPaidOrdersSince(
+  sinceISO: string,
+  limit = 500
+): Promise<AirtableOrder[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('payment_status', 'paid')
+    .gte('created_at', sinceISO)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(orderToRecord)
+}
+
+/**
+ * Wraps flat rows in the `{ id, fields }` envelope the analytics routes expect,
+ * so readAiTable() results drop straight into existing `.fields.x` code.
+ */
+export function asRecords<T = Record<string, any>>(
+  rows: Record<string, any>[]
+): Array<{ id: string; fields: T }> {
+  return rows.map((row) => {
+    const { id, ...rest } = row
+    return { id: String(id), fields: rest as T }
+  })
+}
+
+/** Generic reader for the ai_* analytics tables. */
+export async function readAiTable(
+  table:
+    | 'ai_log'
+    | 'ai_cro'
+    | 'ai_seo'
+    | 'ai_trends'
+    | 'ai_search_console'
+    | 'ai_citations'
+    | 'ai_insights'
+    | 'ai_content'
+    | 'ai_memory',
+  opts: {
+    limit?: number
+    since?: string
+    orderBy?: string
+    ascending?: boolean
+    match?: Record<string, unknown>
+  } = {}
+): Promise<Record<string, any>[]> {
+  const { limit = 500, since, orderBy = 'created_at', ascending = false, match } = opts
+  let query = supabase.from(table).select('*')
+  if (match) for (const [k, v] of Object.entries(match)) query = query.eq(k, v)
+  if (since) query = query.gte(orderBy, since)
+  const { data, error } = await query.order(orderBy, { ascending }).limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
 // ── Cron batch helpers ────────────────────────────────────
 // Back app/api/admin/cron/{badges,display-order,translate}, which previously
 // paged the Airtable REST API and PATCHed in batches of 10.
