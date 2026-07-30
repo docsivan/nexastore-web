@@ -19,25 +19,16 @@ export interface AdminUser {
  * Hardcoded fallback super admins, always present even if the table is empty
  * so the panel can never lock everyone out.
  *
- * ⚠️ REVIEW NEEDED — `director@alfarsi.me` sits on a domain the Zevio hard
- * rules place off-limits ("alfarsi.me — zero connection. Ever."). Anyone
- * controlling that address gets super_admin. Left in place deliberately rather
- * than removed, because deleting an admin is an access-control change only
- * Siva should make. Confirm whether to drop this entry.
+ * HARD RULE: this list is restricted to Zevio-owned addresses. A second
+ * hardcoded super_admin on an external, out-of-scope domain was removed on
+ * 2026-07-30 and must not be reintroduced. Grant additional admins through the
+ * `admin_users` table instead of adding them here.
  */
 const SUPER_ADMINS: AdminUser[] = [
   {
     id: 'admin_001',
     name: 'Siva',
     email: 'docsivan@gmail.com',
-    role: 'super_admin',
-    is_active: true,
-    created_at: '2024-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'admin_000',
-    name: 'Backup Admin',
-    email: 'director@alfarsi.me',
     role: 'super_admin',
     is_active: true,
     created_at: '2024-01-01T00:00:00.000Z',
