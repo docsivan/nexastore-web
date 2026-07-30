@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atList, atCreate, atPatch } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
-function atHeaders() {
-  return { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
-}
-
+/** Thin alias so the atFetch(...) call sites below stay unchanged. */
 async function atFetch(path: string) {
-  const res = await fetch(`${AT_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${API_KEY}` },
-    cache: 'no-store',
-  }).catch(() => null)
-  if (!res?.ok) return { records: [] }
-  return res.json()
+  return atGetPath(path)
 }
 
 async function writeInsight(
@@ -31,25 +21,17 @@ async function writeInsight(
   itemCode?:      string,
   customerId?:    string,
 ) {
-  if (!API_KEY || !BASE_ID) return
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method: 'POST',
-    headers: atHeaders(),
-    body: JSON.stringify({
-      fields: {
-        insight_id:      insightId,
-        package:         pkg,
-        insight_type:    insightType,
-        insight:         insight.slice(0, 500),
-        action_required: actionRequired.slice(0, 300),
-        priority,
-        status:          'new',
-        created_at:      new Date().toISOString(),
-        ...(itemCode   && { item_code:   itemCode }),
-        ...(customerId && { customer_id: customerId }),
-      },
-    }),
-  }).catch(() => {})
+  await atCreate('Nexa_Insights', {
+    insight_id:      insightId,
+    package:         pkg,
+    insight_type:    insightType,
+    insight_text:    insight.slice(0, 500),
+    action_required: actionRequired.slice(0, 300),
+    priority:        String(priority),
+    status:          'new',
+    ...(itemCode   && { item_code:   itemCode }),
+    ...(customerId && { customer_id: customerId }),
+  })
 }
 
 function parseClaudeJson(raw: string): { insight: string; action_required: string } {
@@ -69,9 +51,6 @@ export async function GET(req: NextRequest) {
 
   if (!isAdmin && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  if (!API_KEY || !BASE_ID) {
-    return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
   }
 
   const storeCtx = await getStoreContext()
@@ -249,11 +228,12 @@ export async function GET(req: NextRequest) {
   
   // ── CONVERSATION LEARNING ─────────────────────────────────────────
   // Fetch unanalysed conversations from last 7 days
-  const convoUrl = `https://api.airtable.com/v0/${BASE_ID}/Haya_Conversations?` +
-    `filterByFormula=AND({analysed}=FALSE(),IS_AFTER({created_at},DATEADD(TODAY(),-7,'days')))` +
-    `&maxRecords=50`
-  const convoRes = await fetch(convoUrl, { headers: atHeaders() })
-  const convoData = await convoRes.json()
+  const convoSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const convoData = await atList('Haya_Conversations', {
+    limit: 50,
+    since: convoSince,
+    match: { analysed: false },
+  })
   const conversations = convoData.records ?? []
 
   if (conversations.length > 0) {
@@ -279,30 +259,19 @@ ${transcriptBlock}`
     try {
       const parsed = JSON.parse(convoInsights.replace(/```json|```/g, '').trim())
       for (const insight of parsed.slice(0, 5)) {
-        await fetch(`https://api.airtable.com/v0/${BASE_ID}/Nexa_Insights`, {
-          method: 'POST',
-          headers: atHeaders(),
-          body: JSON.stringify({
-            fields: {
-              insight_id:      `INSIGHT-CHAT-${Date.now()}`,
-              insight_type:    insight.insight_type ?? 'chat_gap',
-              insight_text:    insight.insight_text,
-              action_required: insight.action_required,
-              priority:        insight.priority ?? 'medium',
-              status:          'new',
-              data_window:     'Last 7 days conversations',
-              created_at:      new Date().toISOString(),
-            },
-          }),
+        await atCreate('Nexa_Insights', {
+          insight_id:      `INSIGHT-CHAT-${Date.now()}`,
+          insight_type:    insight.insight_type ?? 'chat_gap',
+          insight_text:    insight.insight_text,
+          action_required: insight.action_required,
+          priority:        insight.priority ?? 'medium',
+          status:          'new',
+          data_window:     'Last 7 days conversations',
         })
       }
       // Mark conversations as analysed
       for (const r of conversations) {
-        await fetch(`https://api.airtable.com/v0/${BASE_ID}/Haya_Conversations/${r.id}`, {
-          method: 'PATCH',
-          headers: atHeaders(),
-          body: JSON.stringify({ fields: { analysed: true } }),
-        })
+        await atPatch('Haya_Conversations', r.id, { analysed: true })
       }
     } catch (e) {
       console.error('[analyse] convo parse failed:', e)

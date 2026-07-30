@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atList, atCreate, atPatch } from '@/lib/ai-tables'
 import { runCMOAgent, CMORecommendation } from '@/lib/nexa-agents'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -16,12 +14,9 @@ function nanoid(): string {
   return `cmo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+/** Thin alias so the atGet(...) call sites below stay unchanged. */
 async function atGet(path: string) {
-  const res = await fetch(`${AT_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-  })
-  if (!res.ok) return { records: [] }
-  return res.json()
+  return atGetPath(path)
 }
 
 async function fetchTrends() {
@@ -80,43 +75,26 @@ async function fetchTopMarginProducts() {
 }
 
 async function writeInsight(insight: CMORecommendation) {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
-        insight_id:      nanoid(),
-        insight_type:    insight.insight_type,
-        insight_text:    insight.insight_text,
-        action_required: insight.action_required,
-        priority:        String(insight.priority ?? '3'),
-        status:          'new',
-        data_window:     'last_7_days',
-        created_at:      new Date().toISOString().split('T')[0],
-      },
-    }),
+  await atCreate('Nexa_Insights', {
+    insight_id:      nanoid(),
+    insight_type:    insight.insight_type,
+    insight_text:    insight.insight_text,
+    action_required: insight.action_required,
+    priority:        String(insight.priority ?? '3'),
+    status:          'new',
+    data_window:     'last_7_days',
   })
 }
 
 async function patchProductBadge(itemCode: string, badge: string, displayOrder: number) {
-  const formula = encodeURIComponent(`{item_code}="${itemCode}"`)
-  const res = await fetch(`${AT_BASE}/Products?filterByFormula=${formula}&maxRecords=1`, {
-    headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-  })
-  if (!res.ok) return
-  const data = await res.json()
+  const data = await atList('Products', { limit: 1, match: { item_code: itemCode } })
   const record = data.records?.[0]
   if (!record) return
-  await fetch(`${AT_BASE}/Products/${record.id}`, {
-    method:  'PATCH',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: { haya_badge: badge, display_order: displayOrder } }),
-  })
+  await atPatch('Products', record.id, { haya_badge: badge, display_order: displayOrder })
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   try {
     const [trends, conversionInsights, searchGaps, topProducts] = await Promise.all([

@@ -1,33 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atCreate, atPatch } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
-function atHeaders() {
-  return {
-    Authorization: `Bearer ${API_KEY}`,
-    'Content-Type': 'application/json',
-  }
-}
-
+/** Thin alias so the atFetch(...) call sites below stay unchanged. */
 async function atFetch(path: string) {
-  const res = await fetch(`${AT_BASE}${path}`, { headers: atHeaders() }).catch(() => null)
-  if (!res?.ok) return { records: [] }
-  return res.json()
+  return atGetPath(path)
 }
 
 async function fetchNewInsights(): Promise<{ id: string; insight: string; package: string; priority: number }[]> {
   try {
     const formula = encodeURIComponent(`{status}='new'`)
-    const url = `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=3`
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' })
-    if (!res.ok) return []
-    const data = await res.json()
+    const data = await atGetPath(`/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=3`)
     return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
       id:       r.id,
       insight:  r.fields.insight as string ?? '',
@@ -42,10 +29,7 @@ async function fetchNewInsights(): Promise<{ id: string; insight: string; packag
 async function fetchCfoInsights(): Promise<{ id: string; insight_text: string }[]> {
   try {
     const formula = encodeURIComponent(`AND({insight_type}="cfo_analysis",{status}="new")`)
-    const url = `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=asc&maxRecords=2`
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' })
-    if (!res.ok) return []
-    const data = await res.json()
+    const data = await atGetPath(`/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=asc&maxRecords=2`)
     return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
       id:           r.id,
       insight_text: String(r.fields.insight_text ?? ''),
@@ -57,11 +41,7 @@ async function fetchCfoInsights(): Promise<{ id: string; insight_text: string }[
 
 async function acknowledgeInsights(ids: string[]) {
   for (const id of ids) {
-    await fetch(`${AT_BASE}/Nexa_Insights/${id}`, {
-      method: 'PATCH',
-      headers: atHeaders(),
-      body: JSON.stringify({ fields: { status: 'acknowledged' } }),
-    }).catch(() => {})
+    await atPatch('Nexa_Insights', id, { status: 'acknowledged' })
   }
 }
 
@@ -71,10 +51,6 @@ export async function GET(req: NextRequest) {
 
   if (!isAdmin && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (!API_KEY || !BASE_ID) {
-    return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
   }
 
   const now       = new Date()
@@ -209,11 +185,7 @@ export async function GET(req: NextRequest) {
     await acknowledgeInsights(cfoInsights.map(i => i.id))
   }
 
-  await fetch(`${AT_BASE}/Nexa_Log`, {
-    method: 'POST',
-    headers: atHeaders(),
-    body: JSON.stringify({
-      fields: {
+  await atCreate('Nexa_Log', {
         timestamp:    now.toISOString(),
         trigger_type: 'morning_briefing',
         action:       'send_briefing',
@@ -222,9 +194,7 @@ export async function GET(req: NextRequest) {
         value:        message.slice(0, 100),
         reason:       urgentAction.slice(0, 100),
         status:       'applied',
-      },
-    }),
-  }).catch(() => {})
+      }).catch(() => {})
 
   return NextResponse.json({ ok: true, message, context: contextSummary })
 }
