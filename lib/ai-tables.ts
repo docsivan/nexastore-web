@@ -183,6 +183,25 @@ export async function atGetPath(
   return atList(table, opts)
 }
 
+/** Airtable-shaped single fetch by row id: replaces GET /Table/:id. */
+export async function atGetOne(
+  table: string,
+  id: string
+): Promise<{ id: string; fields: any; createdTime?: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from(resolveTable(table))
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    if (error || !data) return null
+    return toRecord(data)
+  } catch (e) {
+    console.error(`[ai-tables] getOne ${table} failed:`, e)
+    return null
+  }
+}
+
 /** Airtable-shaped create. Returns the created record, or null on failure. */
 export async function atCreate(
   table: string,
