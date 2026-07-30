@@ -42,7 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     return {
-      title:       `${record.fields.name} | NexaStore`,
+      // Brand suffix comes from the root layout's title template.
+      title:       record.fields.name,
       description: `${record.fields.brand} · ${record.fields.pack_size} · \${record.fields.final_price.toFixed(2)}`,
     }
   } catch {

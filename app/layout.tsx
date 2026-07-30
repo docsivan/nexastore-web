@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { PLATFORM_NAME, SITE_URL } from '@/lib/brand'
 import { Outfit } from 'next/font/google'
 import './globals.css'
 import { CartProvider } from '@/context/CartContext'
@@ -39,24 +40,25 @@ const webSiteSchema = {
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type':    'Organization',
-  name:       'NexaStore',
+  name:       PLATFORM_NAME,
   description: 'Universal AI commerce platform. Commerce powered by intelligence.',
-  url:        'https://nexastore.io',
+  url:        SITE_URL,
 }
 
 export const metadata: Metadata = {
   title: {
-    default: 'NexaStore – AI Commerce Platform',
-    template: '%s | NexaStore',
+    default: `${PLATFORM_NAME} – AI Commerce Platform`,
+    // Child pages supply only their own title; this appends the brand once.
+    template: `%s | ${PLATFORM_NAME}`,
   },
   description:
-    'NexaStore is a universal AI commerce platform. Commerce powered by intelligence — fast global delivery, AI-driven search, and smart procurement.',
-  keywords: ['AI commerce', 'ecommerce platform', 'AI shopping', 'smart procurement', 'NexaStore'],
+    `${PLATFORM_NAME} is a universal AI commerce platform. Commerce powered by intelligence — fast global delivery, AI-driven search, and smart procurement.`,
+  keywords: ['AI commerce', 'ecommerce platform', 'AI shopping', 'smart procurement', PLATFORM_NAME],
   openGraph: {
-    title: 'NexaStore – AI Commerce Platform',
+    title: `${PLATFORM_NAME} – AI Commerce Platform`,
     description: 'Commerce. Powered by Intelligence.',
-    url: 'https://nexastore.io',
-    siteName: 'NexaStore',
+    url: SITE_URL,
+    siteName: PLATFORM_NAME,
     locale: 'en_US',
     type: 'website',
   },

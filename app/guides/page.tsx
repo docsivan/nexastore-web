@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { getPublishedContent } from '@/lib/supabase'
 export const revalidate = 3600
 export const metadata: Metadata = {
-  title: 'Skincare & Beauty Guides | NexaStore',
+  title: 'Skincare & Beauty Guides',
   description: 'Expert guides on skincare routines, active ingredients, sun protection, body care and professional tools.',
 }
 interface Guide { content_id:string; title:string; meta_description:string; category:string; word_count:number }

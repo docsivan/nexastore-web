@@ -32,7 +32,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params
   const c = await fetchContent(slug)
-  if (!c) return { title: 'Guide | NexaStore' }
+  if (!c) return { title: 'Guide' }
   return {
     title:       c.meta_title || c.title,
     description: c.meta_description,

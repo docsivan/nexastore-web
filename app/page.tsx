@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import TrustBar from '@/components/home/TrustBar'
 import HeroBanners from '@/components/home/HeroBanners'
 import FlashDeals from '@/components/home/FlashDeals'
@@ -9,9 +8,9 @@ import FastMoving from '@/components/home/FastMoving'
 import ComplianceStrip from '@/components/home/ComplianceStrip'
 import NexaCTA from '@/components/home/NexaCTA'
 
-export const metadata: Metadata = {
-  title: 'NexaStore – AI Commerce Platform',
-}
+// Title intentionally omitted — the root layout's `title.default` already reads
+// "<PLATFORM_NAME> – AI Commerce Platform". A string title here would be run
+// through the layout's `%s | <PLATFORM_NAME>` template and duplicate the brand.
 
 export default function HomePage() {
   return (
