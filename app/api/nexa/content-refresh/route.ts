@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atPatch } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 const REFRESH_DAYS = 90
 
@@ -23,12 +21,9 @@ async function getStaleContent() {
   const formula = encodeURIComponent(
     `AND({status}="published",OR(IS_BEFORE({last_updated},"${cutoff}"),{last_updated}=""))`
   )
-  const res = await fetch(
-    `${AT_BASE}/Haya_Content?filterByFormula=${formula}&sort[0][field]=last_updated&sort[0][direction]=asc&maxRecords=1`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
+  const data = await atGetPath(
+    `/Haya_Content?filterByFormula=${formula}&sort[0][field]=last_updated&sort[0][direction]=asc&maxRecords=1`
   )
-  if (!res.ok) return null
-  const data = await res.json()
   const r    = data.records?.[0]
   if (!r) return null
   return {
@@ -59,8 +54,6 @@ Return ONLY the updated markdown body. No JSON wrapper.`
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
-
   try {
     const stale = await getStaleContent()
     if (!stale) {
@@ -78,18 +71,12 @@ export async function GET(req: NextRequest) {
     const wordCount = countWords(newBody)
     const now       = new Date().toISOString()
 
-    await fetch(`${AT_BASE}/Haya_Content/${stale.record_id}`, {
-      method:  'PATCH',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        fields: {
+    await atPatch('Haya_Content', stale.record_id, {
           body:         newBody,
           word_count:   wordCount,
           last_updated: now,
           status:       'published',
-        },
-      }),
-    })
+        })
 
     return NextResponse.json({
       ok:         true,

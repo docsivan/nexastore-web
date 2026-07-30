@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atList, atCreate, atPatch } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 async function getRelatedGuides(category: string): Promise<Array<{ title: string; slug: string; tier: string }>> {
-  if (!API_KEY || !BASE_ID || !category) return []
+  if (!category) return []
   try {
     const formula = encodeURIComponent(`AND({status}="published",{category}="${category}")`)
-    const res     = await fetch(
-      `${AT_BASE}/Haya_Content?filterByFormula=${formula}&maxRecords=4`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    )
-    if (!res.ok) return []
-    const data = await res.json()
+    const data = await atGetPath(`/Haya_Content?filterByFormula=${formula}&maxRecords=4`)
     return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
       title: String(r.fields.title       ?? ''),
       slug:  String(r.fields.content_id  ?? ''),
@@ -48,27 +41,15 @@ Include @context, @type, name, description, sku/identifier, brand, offers (with 
 }
 
 async function patchHayaSEO(item_code: string, schema_json: string) {
-  if (!API_KEY || !BASE_ID || !item_code) return
+  if (!item_code) return
   try {
-    const formula   = encodeURIComponent(`{item_code}="${item_code}"`)
-    const checkRes  = await fetch(`${AT_BASE}/Nexa_SEO?filterByFormula=${formula}&maxRecords=1`, {
-      headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-    })
-    const checkData = await checkRes.json()
+    const checkData = await atList('Nexa_SEO', { limit: 1, match: { item_code } })
     const existing  = checkData.records?.[0]
 
     if (existing) {
-      await fetch(`${AT_BASE}/Nexa_SEO/${existing.id}`, {
-        method:  'PATCH',
-        headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ fields: { schema_json } }),
-      })
+      await atPatch('Nexa_SEO', existing.id, { schema_json })
     } else {
-      await fetch(`${AT_BASE}/Nexa_SEO`, {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ fields: { item_code, schema_json } }),
-      })
+      await atCreate('Nexa_SEO', { item_code, schema_json })
     }
   } catch {}
 }
