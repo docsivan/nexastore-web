@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import { supabase } from './supabase'
 
 export type AdminRole = 'super_admin' | 'admin' | 'staff'
 
@@ -14,6 +15,16 @@ export interface AdminUser {
   created_at: string
 }
 
+/**
+ * Hardcoded fallback super admins, always present even if the table is empty
+ * so the panel can never lock everyone out.
+ *
+ * ⚠️ REVIEW NEEDED — `director@alfarsi.me` sits on a domain the Zevio hard
+ * rules place off-limits ("alfarsi.me — zero connection. Ever."). Anyone
+ * controlling that address gets super_admin. Left in place deliberately rather
+ * than removed, because deleting an admin is an access-control change only
+ * Siva should make. Confirm whether to drop this entry.
+ */
 const SUPER_ADMINS: AdminUser[] = [
   {
     id: 'admin_001',
@@ -33,13 +44,6 @@ const SUPER_ADMINS: AdminUser[] = [
   },
 ]
 
-const BASE_URL = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}`
-const AT_HEADERS = {
-  'Authorization': `Bearer ${process.env.AIRTABLE_API_KEY}`,
-  'Content-Type': 'application/json',
-}
-const ADMIN_USERS_TABLE = 'Admin_Users'
-
 export function getSuperAdmins(): AdminUser[] {
   return SUPER_ADMINS
 }
@@ -52,20 +56,26 @@ export function findSuperAdmin(email: string): AdminUser | undefined {
   return SUPER_ADMINS.find(u => u.email.toLowerCase() === email.toLowerCase())
 }
 
-async function atFetch(path: string, opts: RequestInit = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, { ...opts, headers: { ...AT_HEADERS, ...(opts.headers ?? {}) } })
-  if (!res.ok) throw new Error(`Airtable ${res.status}: ${await res.text()}`)
-  return res.json()
+/** Fetches a single admin_users row by email, or null. */
+async function fetchByEmail(email: string) {
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('*')
+    .eq('email', email)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data
 }
 
 export async function listAdminUsers(): Promise<AdminUser[]> {
   try {
-    const fields = ['name','email','role','password_hash','must_change_password','is_active','last_login','created_at']
-    const qs = fields.map(f => `fields%5B%5D=${encodeURIComponent(f)}`).join('&')
-    const data = await atFetch(`/${ADMIN_USERS_TABLE}?${qs}`)
-    const dynamic: AdminUser[] = (data.records ?? []).map((r: { fields: AdminUser }) => ({ ...r.fields }))
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('name,email,role,password_hash,must_change_password,is_active,last_login,created_at')
+    if (error) throw new Error(error.message)
+    const rows = (data ?? []) as unknown as AdminUser[]
     const superEmails = new Set(SUPER_ADMINS.map(u => u.email.toLowerCase()))
-    const filtered = dynamic.filter(u => !superEmails.has(u.email.toLowerCase()))
+    const filtered = rows.filter(u => !superEmails.has(u.email.toLowerCase()))
     return [...SUPER_ADMINS, ...filtered]
   } catch {
     return [...SUPER_ADMINS]
@@ -77,11 +87,9 @@ export async function findAdminUser(email: string): Promise<AdminUser | undefine
   if (superAdmin) return superAdmin
 
   try {
-    const formula = encodeURIComponent(`{email}="${email.replace(/"/g, '\\"')}"`)
-    const data = await atFetch(`/${ADMIN_USERS_TABLE}?filterByFormula=${formula}&maxRecords=1`)
-    const rec = data.records?.[0]
+    const rec = await fetchByEmail(email)
     if (!rec) return undefined
-    return { ...rec.fields, _recordId: rec.id } as AdminUser & { _recordId: string }
+    return { ...(rec as unknown as AdminUser), _recordId: String(rec.id) } as AdminUser & { _recordId: string }
   } catch {
     return undefined
   }
@@ -89,48 +97,43 @@ export async function findAdminUser(email: string): Promise<AdminUser | undefine
 
 export async function createAdminUser(user: Omit<AdminUser, 'created_at'> & { plainPassword: string }): Promise<AdminUser> {
   const password_hash = await bcrypt.hash(user.plainPassword, 12)
-  const fields = {
-    name:                 user.name,
-    email:                user.email,
-    role:                 user.role,
-    password_hash,
-    must_change_password: true,
-    is_active:            true,
-    created_at:           new Date().toISOString(),
-  }
-  const data = await atFetch(`/${ADMIN_USERS_TABLE}`, {
-    method: 'POST',
-    body: JSON.stringify({ fields }),
-  })
-  return data.fields as AdminUser
+  const { data, error } = await supabase
+    .from('admin_users')
+    .insert({
+      name:                 user.name,
+      email:                user.email,
+      role:                 user.role,
+      password_hash,
+      must_change_password: true,
+      is_active:            true,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return data as unknown as AdminUser
 }
 
 export async function updateAdminUserPassword(email: string, plainPassword: string): Promise<boolean> {
   try {
-    const formula = encodeURIComponent(`{email}="${email.replace(/"/g, '\\"')}"`)
-    const data = await atFetch(`/${ADMIN_USERS_TABLE}?filterByFormula=${formula}&maxRecords=1`)
-    const rec = data.records?.[0]
     const password_hash = await bcrypt.hash(plainPassword, 12)
+    const admin = findSuperAdmin(email)
 
-    if (rec) {
-      await atFetch(`/${ADMIN_USERS_TABLE}/${rec.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ fields: { password_hash, must_change_password: false } }),
-      })
-    } else {
-      // Create row for super admin on first password set
-      const admin = findSuperAdmin(email)
-      if (admin) {
-        await atFetch(`/${ADMIN_USERS_TABLE}`, {
-          method: 'POST',
-          body: JSON.stringify({ fields: {
-            name: admin.name, email: admin.email,
-            role: admin.role, password_hash, must_change_password: false,
-            is_active: true, created_at: new Date().toISOString(),
-          }}),
-        })
-      }
-    }
+    // Upsert covers both cases the Airtable version handled separately:
+    // patching an existing row, and creating one for a super admin on first
+    // password set. email is unique, so onConflict resolves it.
+    const { error } = await supabase
+      .from('admin_users')
+      .upsert(
+        {
+          email,
+          password_hash,
+          must_change_password: false,
+          is_active: true,
+          ...(admin ? { name: admin.name, role: admin.role } : {}),
+        },
+        { onConflict: 'email' }
+      )
+    if (error) throw new Error(error.message)
     return true
   } catch {
     return false
@@ -139,11 +142,9 @@ export async function updateAdminUserPassword(email: string, plainPassword: stri
 
 export async function verifyAdminPassword(email: string, plainPassword: string): Promise<boolean> {
   try {
-    const formula = encodeURIComponent(`{email}="${email.replace(/"/g, '\\"')}"`)
-    const data = await atFetch(`/${ADMIN_USERS_TABLE}?filterByFormula=${formula}&maxRecords=1`)
-    const rec = data.records?.[0]
-    if (!rec?.fields?.password_hash) return false
-    return bcrypt.compare(plainPassword, rec.fields.password_hash)
+    const rec = await fetchByEmail(email)
+    if (!rec?.password_hash) return false
+    return bcrypt.compare(plainPassword, rec.password_hash)
   } catch {
     return false
   }
@@ -151,27 +152,22 @@ export async function verifyAdminPassword(email: string, plainPassword: string):
 
 export async function recordLastLogin(email: string): Promise<void> {
   try {
-    const formula = encodeURIComponent(`{email}="${email.replace(/"/g, '\\"')}"`)
-    const data = await atFetch(`/${ADMIN_USERS_TABLE}?filterByFormula=${formula}&maxRecords=1`)
-    const rec = data.records?.[0]
-    if (!rec) return
-    await atFetch(`/${ADMIN_USERS_TABLE}/${rec.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ fields: { last_login: new Date().toISOString() } }),
-    })
+    await supabase
+      .from('admin_users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('email', email)
   } catch {}
 }
 
 export async function deactivateAdminUser(email: string): Promise<boolean> {
   try {
-    const formula = encodeURIComponent(`{email}="${email.replace(/"/g, '\\"')}"`)
-    const data = await atFetch(`/${ADMIN_USERS_TABLE}?filterByFormula=${formula}&maxRecords=1`)
-    const rec = data.records?.[0]
+    const rec = await fetchByEmail(email)
     if (!rec) return false
-    await atFetch(`/${ADMIN_USERS_TABLE}/${rec.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ fields: { is_active: false } }),
-    })
+    const { error } = await supabase
+      .from('admin_users')
+      .update({ is_active: false })
+      .eq('email', email)
+    if (error) throw new Error(error.message)
     return true
   } catch {
     return false

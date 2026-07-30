@@ -291,6 +291,51 @@ export async function getOrdersSince(
   return (data ?? []).map(orderToRecord)
 }
 
+// ── Cron batch helpers ────────────────────────────────────
+// Back app/api/admin/cron/{badges,display-order,translate}, which previously
+// paged the Airtable REST API and PATCHed in batches of 10.
+
+/**
+ * Bulk-updates products by row id. Replaces Airtable's batch PATCH endpoint.
+ * Runs sequentially so a partial failure is reported rather than silent.
+ */
+export async function updateProductsBatch(
+  batch: Array<{ id: string; fields: Record<string, unknown> }>
+): Promise<{ updated: number; failed: number }> {
+  let updated = 0
+  let failed = 0
+  for (const { id, fields } of batch) {
+    const { error } = await supabase
+      .from('products')
+      .update({ ...productFieldsToColumns(fields), updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) failed++
+    else updated++
+  }
+  return { updated, failed }
+}
+
+/** Records a cron run outcome. Non-blocking — never fails the job. */
+export async function writeCronLog(entry: {
+  cron_name: string
+  status: string
+  records_processed?: number
+  error_message?: string
+}): Promise<void> {
+  try {
+    const { error } = await supabase.from('cron_log').insert({
+      cron_name:         entry.cron_name,
+      status:            entry.status,
+      records_processed: entry.records_processed ?? 0,
+      error_message:     entry.error_message ?? null,
+      run_at:            new Date().toISOString(),
+    })
+    if (error) throw error
+  } catch (e) {
+    console.error('[cron log]', e)
+  }
+}
+
 /** All products, lowest stock first — backs the admin stock screen. */
 export async function getProductsByStock(limit = 200): Promise<AirtableProduct[]> {
   const { data, error } = await supabase

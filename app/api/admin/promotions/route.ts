@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
-
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   return req.cookies.get('adminAuth')?.value === 'true'
@@ -12,26 +9,31 @@ function checkAuth(req: NextRequest): boolean {
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
-  const formula = encodeURIComponent(`{status}="active"`)
-  const res = await fetch(
-    `${AT_BASE}/Haya_Promotions?filterByFormula=${formula}&maxRecords=20&sort[0][field]=ends_at&sort[0][direction]=asc`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return NextResponse.json({ promotions: [] })
+  try {
+    const { data, error } = await supabase
+      .from('ai_promotions')
+      .select('*')
+      .eq('status', 'active')
+      .order('ends_at', { ascending: true })
+      .limit(20)
 
-  const data = await res.json()
-  const promotions = (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    promo_id:         String(r.fields.promo_id         ?? ''),
-    item_code:        String(r.fields.item_code        ?? ''),
-    promo_discount:   Number(r.fields.promo_discount   ?? 0),
-    original_discount: Number(r.fields.original_discount ?? 0),
-    starts_at:        String(r.fields.starts_at        ?? ''),
-    ends_at:          String(r.fields.ends_at          ?? ''),
-    status:           String(r.fields.status           ?? ''),
-    approved_by:      String(r.fields.approved_by      ?? ''),
-  }))
+    if (error) return NextResponse.json({ promotions: [] })
 
-  return NextResponse.json({ promotions })
+    const promotions = (data ?? []).map((r) => ({
+      promo_id:          String(r.promo_id          ?? ''),
+      item_code:         String(r.item_code         ?? ''),
+      // falls back to the base discount_percent column from migration 001
+      promo_discount:    Number(r.promo_discount    ?? r.discount_percent ?? 0),
+      original_discount: Number(r.original_discount ?? 0),
+      starts_at:         String(r.starts_at         ?? ''),
+      ends_at:           String(r.ends_at           ?? ''),
+      status:            String(r.status            ?? ''),
+      approved_by:       String(r.approved_by       ?? ''),
+    }))
+
+    return NextResponse.json({ promotions })
+  } catch {
+    return NextResponse.json({ promotions: [] })
+  }
 }

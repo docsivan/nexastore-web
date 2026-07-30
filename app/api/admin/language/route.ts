@@ -1,39 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
+const CONFIG_KEY = 'second_language'
 
 function checkAdmin(req: NextRequest): boolean {
   return req.cookies.get('adminAuth')?.value === 'true'
 }
 
-async function getRecord(): Promise<{ id: string; value: string } | null> {
-  try {
-    const formula = encodeURIComponent(`{config_key}='second_language'`)
-    const res = await fetch(
-      `${AT_BASE}/Store_Config?filterByFormula=${formula}&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    const rec = data.records?.[0]
-    if (!rec) return null
-    return { id: rec.id, value: String(rec.fields.config_value ?? 'none') }
-  } catch {
-    return null
-  }
-}
-
 export async function GET() {
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ second_language: 'none' })
-  const rec = await getRecord()
-  return NextResponse.json({ second_language: rec?.value ?? 'none' })
+  try {
+    const { data, error } = await supabase
+      .from('store_config')
+      .select('config_value')
+      .eq('config_key', CONFIG_KEY)
+      .maybeSingle()
+    if (error || !data) return NextResponse.json({ second_language: 'none' })
+    return NextResponse.json({ second_language: data.config_value ?? 'none' })
+  } catch {
+    return NextResponse.json({ second_language: 'none' })
+  }
 }
 
 export async function POST(req: NextRequest) {
   if (!checkAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   const { second_language } = await req.json() as { second_language: string }
   const allowed = ['none', 'ar', 'fr', 'hi', 'ur']
@@ -41,21 +30,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid language' }, { status: 400 })
   }
 
-  const existing = await getRecord()
-
-  if (existing) {
-    await fetch(`${AT_BASE}/Store_Config/${existing.id}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { config_value: second_language } }),
-    })
-  } else {
-    await fetch(`${AT_BASE}/Store_Config`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { config_key: 'second_language', config_value: second_language } }),
-    })
+  try {
+    // config_key is unique, so a single upsert replaces the old
+    // read-then-insert-or-patch round trip.
+    const { error } = await supabase
+      .from('store_config')
+      .upsert(
+        { config_key: CONFIG_KEY, config_value: second_language, updated_at: new Date().toISOString() },
+        { onConflict: 'config_key' }
+      )
+    if (error) throw error
+    return NextResponse.json({ ok: true })
+  } catch {
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
   }
-
-  return NextResponse.json({ ok: true })
 }

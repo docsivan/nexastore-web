@@ -1,27 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContent } from '@/lib/gemini'
-import { AirtableOrder, AirtableProduct, OrderFields, ProductFields } from '@/lib/airtableTypes'
+import { OrderFields, ProductFields } from '@/lib/airtableTypes'
+import { getOrdersSince, getFastMovingProducts } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY!
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID!
-const ADMIN_PIN = process.env.ADMIN_PIN!
-
 function checkAuth(req: NextRequest): boolean {
   return req.cookies.get('adminAuth')?.value === 'true'
-}
-
-async function fetchAirtable<T>(table: string, params: URLSearchParams): Promise<T[]> {
-  const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(table)}`)
-  url.search = params.toString()
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-    cache: 'no-store',
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.records ?? []
 }
 
 export async function GET(req: NextRequest) {
@@ -36,20 +21,18 @@ export async function GET(req: NextRequest) {
     last7.setDate(today.getDate() - 7)
     const last7Start = last7.toISOString().slice(0, 10)
 
-    // Yesterday's orders
-    const yOrders = await fetchAirtable<AirtableOrder>('Orders', new URLSearchParams({
-      filterByFormula: `AND(IS_AFTER({created_at},'${yStart}'), IS_BEFORE({created_at},'${today.toISOString().slice(0, 10)}'))`,
-      maxRecords: '500',
-    }))
+    // Yesterday's orders — fetched from yStart, then bounded to before today
+    const todayStart = today.toISOString().slice(0, 10)
+    const yOrders = (await getOrdersSince(yStart, 500)).filter((o) => {
+      const created = String((o.fields as OrderFields).created_at ?? o.createdTime ?? '')
+      return created >= yStart && created < todayStart
+    })
 
     const yRevenue = yOrders.reduce((s, o) => s + ((o.fields as OrderFields).total ?? 0), 0)
     const pendingDispatch = yOrders.filter(o => (o.fields as OrderFields).delivery_status === 'processing').length
 
     // Low stock
-    const lowStock = await fetchAirtable<AirtableProduct>('Products', new URLSearchParams({
-      filterByFormula: `AND({is_active}=1,{stock_quantity}<10,{stock_quantity}>0)`,
-      maxRecords: '20',
-    }))
+    const lowStock = await getFastMovingProducts(10, 20)
 
     const lowStockList = lowStock.map(p => ({
       name: (p.fields as ProductFields).name,
@@ -58,10 +41,7 @@ export async function GET(req: NextRequest) {
     }))
 
     // Top 5 products last 7 days
-    const last7Orders = await fetchAirtable<AirtableOrder>('Orders', new URLSearchParams({
-      filterByFormula: `IS_AFTER({created_at},'${last7Start}')`,
-      maxRecords: '500',
-    }))
+    const last7Orders = await getOrdersSince(last7Start, 500)
 
     const counts: Record<string, { name: string; count: number }> = {}
     for (const order of last7Orders) {

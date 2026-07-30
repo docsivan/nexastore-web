@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server'
+import { getProducts, updateProductsBatch, writeCronLog } from '@/lib/supabase'
 
-export const dynamic    = 'force-dynamic'
+export const dynamic     = 'force-dynamic'
 export const maxDuration = 300
-
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
-const HEADERS = {
-  Authorization:  `Bearer ${API_KEY}`,
-  'Content-Type': 'application/json',
-}
-
-const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 interface Product {
   id:               string
@@ -20,33 +11,12 @@ interface Product {
 }
 
 async function fetchAllActive(): Promise<Product[]> {
-  const records: Product[] = []
-  let offset: string | undefined
-
-  do {
-    const url = new URL(`${AT_BASE}/Products`)
-    url.searchParams.set('filterByFormula', '{is_active}=1')
-    url.searchParams.set('fields[]', 'discount_percent')
-    url.searchParams.append('fields[]', 'stock_quantity')
-    if (offset) url.searchParams.set('offset', offset)
-
-    const res = await fetch(url.toString(), { headers: HEADERS, cache: 'no-store' })
-    if (!res.ok) throw new Error(`Airtable list failed: ${res.status}`)
-    const data = await res.json()
-
-    for (const r of data.records ?? []) {
-      records.push({
-        id:               r.id,
-        discount_percent: r.fields.discount_percent ?? 0,
-        stock_quantity:   r.fields.stock_quantity   ?? 0,
-      })
-    }
-
-    offset = data.offset
-    if (offset) await wait(200)
-  } while (offset)
-
-  return records
+  const records = await getProducts()
+  return records.map((r) => ({
+    id:               r.id,
+    discount_percent: Number(r.fields.discount_percent ?? 0),
+    stock_quantity:   Number(r.fields.stock_quantity ?? 0),
+  }))
 }
 
 function computeOrder(products: Product[]): { id: string; order: number }[] {
@@ -68,38 +38,7 @@ function computeOrder(products: Product[]): { id: string; order: number }[] {
   return [...nonMoving, ...slowMoving, ...rest].map((p, i) => ({ id: p.id, order: i + 1 }))
 }
 
-async function patchBatch(batch: { id: string; fields: { display_order: number } }[]) {
-  const res = await fetch(`${AT_BASE}/Products`, {
-    method:  'PATCH',
-    headers: HEADERS,
-    body:    JSON.stringify({ records: batch }),
-  })
-  if (!res.ok) throw new Error(`Airtable PATCH failed: ${res.status}`)
-}
-
-async function logCron(cron: string, count: number, status: 'success' | 'failed', error = '') {
-  await fetch(`${AT_BASE}/Haya_Cron_Log`, {
-    method:  'POST',
-    headers: HEADERS,
-    body: JSON.stringify({
-      records: [{
-        fields: {
-          cron_name:         cron,
-          status,
-          records_processed: count,
-          error_message:     error,
-          run_at:            new Date().toISOString(),
-        },
-      }],
-    }),
-  }).catch(() => {})
-}
-
 export async function GET() {
-  if (!API_KEY || !BASE_ID) {
-    return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
-  }
-
   try {
     const products = await fetchAllActive()
 
@@ -110,25 +49,32 @@ export async function GET() {
     const ordered = computeOrder(products)
 
     let processed = 0
-    for (let i = 0; i < ordered.length; i += 10) {
-      const batch = ordered.slice(i, i + 10).map(r => ({
+    let failed = 0
+    for (let i = 0; i < ordered.length; i += 50) {
+      const batch = ordered.slice(i, i + 50).map(r => ({
         id:     r.id,
         fields: { display_order: r.order },
       }))
-      await patchBatch(batch)
-      processed += batch.length
-      if (i + 10 < ordered.length) await wait(200)
+      const res = await updateProductsBatch(batch)
+      processed += res.updated
+      failed += res.failed
     }
 
-    await logCron('display_order', processed, 'success')
+    await writeCronLog({
+      cron_name: 'display_order',
+      status: failed ? 'partial' : 'success',
+      records_processed: processed,
+      error_message: failed ? `${failed} row(s) failed` : undefined,
+    })
     return NextResponse.json({
       ok:       true,
       processed,
+      failed,
       message:  `Assigned display_order to ${processed} products`,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    await logCron('display_order', 0, 'failed', msg)
+    await writeCronLog({ cron_name: 'display_order', status: 'failed', records_processed: 0, error_message: msg })
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
