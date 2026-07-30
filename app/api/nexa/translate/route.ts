@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atList, atCreate, atPatch } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 const BATCH_SIZE = 25
 
@@ -25,22 +23,16 @@ interface Product {
 
 async function getUntranslatedProducts(): Promise<Product[]> {
   // Fetch products that don't yet have an Arabic SEO record
-  const [productsRes, seoRes] = await Promise.all([
-    fetch(
-      `${AT_BASE}/Products?fields[]=item_code&fields[]=name&fields[]=description&fields[]=category&fields[]=is_active&filterByFormula=${encodeURIComponent('{is_active}=1')}&maxRecords=100`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    ),
-    fetch(
-      `${AT_BASE}/Nexa_SEO?fields[]=item_code&fields[]=meta_title_ar&filterByFormula=${encodeURIComponent('NOT({meta_title_ar}="")')}&maxRecords=200`,
-      { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-    ),
+  const [productsData, seoData] = await Promise.all([
+    atList('Products', { limit: 100, match: { is_active: true } }),
+    atList('Nexa_SEO', { limit: 200 }),
   ])
 
-  const productsData = productsRes.ok ? await productsRes.json() : { records: [] }
-  const seoData      = seoRes.ok     ? await seoRes.json()      : { records: [] }
-
+  // Only rows that already carry an Arabic title count as translated
   const translatedCodes = new Set(
-    (seoData.records ?? []).map((r: { fields: Record<string, unknown> }) => String(r.fields.item_code ?? ''))
+    (seoData.records ?? [])
+      .filter((r: { fields: Record<string, unknown> }) => Boolean(r.fields.meta_title_ar))
+      .map((r: { fields: Record<string, unknown> }) => String(r.fields.item_code ?? ''))
   )
 
   const all: Product[] = (productsData.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
@@ -79,13 +71,11 @@ For meta_description_ar: include key benefits and ${storeCtx.storeName} brand me
 }
 
 async function upsertSeoRecord(translation: Translation): Promise<void> {
-  const formula    = encodeURIComponent(`{item_code}="${translation.item_code}"`)
-  const checkRes   = await fetch(
-    `${AT_BASE}/Nexa_SEO?filterByFormula=${formula}&maxRecords=1`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  const checkData  = checkRes.ok ? await checkRes.json() : { records: [] }
-  const existing   = checkData.records?.[0]
+  const checkData = await atList('Nexa_SEO', {
+    limit: 1,
+    match: { item_code: translation.item_code },
+  })
+  const existing = checkData.records?.[0]
 
   const fields = {
     meta_title_ar:       translation.meta_title_ar,
@@ -93,23 +83,14 @@ async function upsertSeoRecord(translation: Translation): Promise<void> {
   }
 
   if (existing) {
-    await fetch(`${AT_BASE}/Nexa_SEO/${existing.id}`, {
-      method:  'PATCH',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields }),
-    })
+    await atPatch('Nexa_SEO', existing.id, fields)
   } else {
-    await fetch(`${AT_BASE}/Nexa_SEO`, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ records: [{ fields: { item_code: translation.item_code, ...fields } }] }),
-    })
+    await atCreate('Nexa_SEO', { item_code: translation.item_code, ...fields })
   }
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
 
   try {
     const products = await getUntranslatedProducts()

@@ -36,3 +36,11 @@ alter table ai_search_console add column if not exists data_range text;
 alter table ai_search_console add column if not exists fetched_at timestamptz;
 
 create index if not exists idx_ai_gsc_query on ai_search_console(query, data_range);
+
+-- app/api/nexa/citations tags which analyst produced an insight.
+alter table ai_insights add column if not exists source text;
+
+-- products.description: written by app/api/nexa/cro (conversion rewrites) and
+-- read by lib/ai-context for the chat prompt. Migration 001 only had
+-- description_ar, so the English description had nowhere to live.
+alter table products add column if not exists description text;

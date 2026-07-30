@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atCreate } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -55,40 +53,23 @@ async function checkCitation(query: string): Promise<SerpResult> {
 }
 
 async function writeCitationRecord(result: SerpResult): Promise<void> {
-  await fetch(`${AT_BASE}/Haya_Citations`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      records: [{
-        fields: {
-          query:      result.query,
-          platform:   result.platform,
-          cited:      result.cited,
-          position:   result.position,
-          context:    result.context,
-          fetched_at: new Date().toISOString().slice(0, 10),
-        },
-      }],
-    }),
+  await atCreate('Haya_Citations', {
+    query:      result.query,
+    platform:   result.platform,
+    cited:      result.cited,
+    position:   result.position,
+    context:    result.context,
+    fetched_at: new Date().toISOString().slice(0, 10),
   })
 }
 
 async function writeInsight(insight: { insight_type: string; insight_text: string; action_required: string; priority: string }): Promise<void> {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      records: [{
-        fields: {
-          insight_type:    insight.insight_type,
-          insight_text:    insight.insight_text,
-          action_required: insight.action_required,
-          priority:        insight.priority,
-          created_at:      new Date().toISOString(),
-          source:          'citations',
-        },
-      }],
-    }),
+  await atCreate('Nexa_Insights', {
+    insight_type:    insight.insight_type,
+    insight_text:    insight.insight_text,
+    action_required: insight.action_required,
+    priority:        insight.priority,
+    source:          'citations',
   })
 }
 

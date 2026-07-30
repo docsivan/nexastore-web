@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atGetPath, atList, atCreate, atPatch } from '@/lib/ai-tables'
 import { runCROAgent, CROFix } from '@/lib/nexa-agents'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -18,12 +16,9 @@ function nanoid(): string {
   return `cro-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+/** Kept as a thin alias so the call sites below stay unchanged. */
 async function atGet(path: string) {
-  const res = await fetch(`${AT_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-  })
-  if (!res.ok) return { records: [] }
-  return res.json()
+  return atGetPath(path)
 }
 
 async function fetchCROSignals() {
@@ -69,33 +64,20 @@ async function fetchConversionRates() {
 }
 
 async function writeInsight(insight: CROFix) {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
-        insight_id:      nanoid(),
-        insight_type:    'cro_fix',
-        insight_text:    insight.insight_text,
-        action_required: insight.action_required,
-        priority:        String(insight.priority ?? '3'),
-        status:          'new',
-        data_window:     'last_7_days',
-        created_at:      new Date().toISOString().split('T')[0],
-      },
-    }),
+  await atCreate('Nexa_Insights', {
+    insight_id:      nanoid(),
+    insight_type:    'cro_fix',
+    insight_text:    insight.insight_text,
+    action_required: insight.action_required,
+    priority:        String(insight.priority ?? '3'),
+    status:          'new',
+    data_window:     'last_7_days',
   })
 }
 
 async function rewriteProductDescription(itemCode: string): Promise<string | null> {
   // Fetch current product
-  const formula = encodeURIComponent(`{item_code}="${itemCode}"`)
-  const res = await fetch(
-    `${AT_BASE}/Products?filterByFormula=${formula}&maxRecords=1&fields[]=item_code&fields[]=name&fields[]=description&fields[]=category`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return null
-  const data = await res.json()
+  const data = await atList('Products', { limit: 1, match: { item_code: itemCode } })
   const record = data.records?.[0]
   if (!record) return null
 
@@ -106,19 +88,13 @@ async function rewriteProductDescription(itemCode: string): Promise<string | nul
     `You are a product copywriter for ${storeCtx.storeName}. Write concise, professional, conversion-focused descriptions. Return only the description text, no labels.`
   )
 
-  // PATCH to Airtable
-  await fetch(`${AT_BASE}/Products/${record.id}`, {
-    method:  'PATCH',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: { description: newDesc } }),
-  })
+  await atPatch('Products', record.id, { description: newDesc })
 
   return newDesc
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   try {
     const [croSignals, abandonSignals, conversionRates] = await Promise.all([
