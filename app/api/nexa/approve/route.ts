@@ -1,45 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { handleReorderReminder, handleStockAlert, HayaInsight } from '@/lib/nexa-actions'
+import { atGetOne, atPatch } from '@/lib/ai-tables'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY  = process.env.AIRTABLE_API_KEY!
-const BASE_ID  = process.env.AIRTABLE_BASE_ID!
-const AT_BASE  = `https://api.airtable.com/v0/${BASE_ID}`
 const MAKE_WH  = process.env.MAKE_DISPATCH_WEBHOOK_URL
 const OWNER_PH = process.env.OWNER_WHATSAPP_NUMBER
 
 async function fetchInsight(id: string): Promise<HayaInsight | null> {
-  try {
-    const res = await fetch(`${AT_BASE}/Nexa_Insights/${id}`, {
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      cache:   'no-store',
-    })
-    if (!res.ok) return null
-    const r = await res.json()
-    return {
-      id:              r.id,
-      insight_id:      String(r.fields.insight_id      ?? ''),
-      package:         String(r.fields.package         ?? ''),
-      insight_type:    String(r.fields.insight_type    ?? r.fields.package ?? ''),
-      insight:         String(r.fields.insight         ?? ''),
-      priority:        Number(r.fields.priority        ?? 0),
-      status:          String(r.fields.status          ?? ''),
-      action_required: String(r.fields.action_required ?? ''),
-      item_code:       r.fields.item_code   ? String(r.fields.item_code)   : undefined,
-      customer_id:     r.fields.customer_id ? String(r.fields.customer_id) : undefined,
-    }
-  } catch {
-    return null
+  const r = await atGetOne('Nexa_Insights', id)
+  if (!r) return null
+  return {
+    id:              r.id,
+    insight_id:      String(r.fields.insight_id      ?? ''),
+    package:         String(r.fields.package         ?? ''),
+    insight_type:    String(r.fields.insight_type    ?? r.fields.package ?? ''),
+    insight:         String(r.fields.insight_text    ?? r.fields.insight ?? ''),
+    priority:        Number(r.fields.priority        ?? 0),
+    status:          String(r.fields.status          ?? ''),
+    action_required: String(r.fields.action_required ?? ''),
+    item_code:       r.fields.item_code   ? String(r.fields.item_code)   : undefined,
+    customer_id:     r.fields.customer_id ? String(r.fields.customer_id) : undefined,
   }
 }
 
 async function patchStatus(id: string, status: string) {
-  await fetch(`${AT_BASE}/Nexa_Insights/${id}`, {
-    method:  'PATCH',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ fields: { status } }),
-  }).catch(() => {})
+  await atPatch('Nexa_Insights', id, { status })
 }
 
 export async function POST(req: NextRequest) {
