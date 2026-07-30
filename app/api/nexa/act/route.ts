@@ -1,5 +1,6 @@
 import { guardCronRoute } from '@/lib/admin-guard'
 import { NextRequest, NextResponse } from 'next/server'
+import { atList, atCreate, atPatch } from '@/lib/ai-tables'
 import {
   handleReorderReminder,
   handleMerchandisingUpdate,
@@ -15,9 +16,7 @@ function promoId(): string {
   return `promo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-async function handlePromotion(insight: HayaInsight, apiKey: string, baseId: string) {
-  const AT = `https://api.airtable.com/v0/${baseId}`
-  const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
+async function handlePromotion(insight: HayaInsight) {
   const itemCode = insight.item_code
   if (!itemCode) return
 
@@ -27,13 +26,7 @@ async function handlePromotion(insight: HayaInsight, apiKey: string, baseId: str
   const promoDiscount = discountMatch ? parseInt(discountMatch[1]) : 10
 
   // Fetch current product
-  const formula = encodeURIComponent(`{item_code}="${itemCode}"`)
-  const prodRes = await fetch(
-    `${AT}/Products?filterByFormula=${formula}&maxRecords=1&fields[]=item_code&fields[]=discount_percent&fields[]=haya_badge`,
-    { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store' }
-  )
-  if (!prodRes.ok) return
-  const prodData   = await prodRes.json()
+  const prodData   = await atList('Products', { limit: 1, match: { item_code: itemCode } })
   const prodRecord = prodData.records?.[0]
   if (!prodRecord) return
 
@@ -41,114 +34,75 @@ async function handlePromotion(insight: HayaInsight, apiKey: string, baseId: str
   const now     = new Date()
   const endsAt  = new Date(now.getTime() + 48 * 60 * 60 * 1000)
 
-  // PATCH product: new discount + SALE badge
-  await fetch(`${AT}/Products/${prodRecord.id}`, {
-    method: 'PATCH', headers,
-    body: JSON.stringify({ fields: { discount_percent: promoDiscount, haya_badge: 'SALE' } }),
+  // New discount + SALE badge
+  await atPatch('Products', prodRecord.id, {
+    discount_percent: promoDiscount,
+    haya_badge: 'SALE',
   })
 
-  // Write Haya_Promotions record
-  await fetch(`${AT}/Haya_Promotions`, {
-    method: 'POST', headers,
-    body: JSON.stringify({
-      fields: {
-        promo_id:          promoId(),
-        item_code:         itemCode,
-        original_discount: originalDiscount,
-        promo_discount:    promoDiscount,
-        starts_at:         now.toISOString().split('T')[0],
-        ends_at:           endsAt.toISOString().split('T')[0],
-        status:            'active',
-        approved_by:       'owner',
-      },
-    }),
+  await atCreate('Haya_Promotions', {
+    promo_id:          promoId(),
+    item_code:         itemCode,
+    original_discount: originalDiscount,
+    promo_discount:    promoDiscount,
+    starts_at:         now.toISOString().split('T')[0],
+    ends_at:           endsAt.toISOString().split('T')[0],
+    status:            'active',
+    approved_by:       'owner',
   })
 }
 
-async function expirePromotions(apiKey: string, baseId: string) {
-  const AT = `https://api.airtable.com/v0/${baseId}`
-  const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-
+async function expirePromotions() {
   const todayStr = new Date().toISOString().split('T')[0]
-  const formula  = encodeURIComponent(
-    `AND({status}="active",IS_BEFORE({ends_at},"${todayStr}"))`
+  const data = await atList('Haya_Promotions', { limit: 50, match: { status: 'active' } })
+  const due = (data.records ?? []).filter(
+    (r: { fields: { ends_at?: string } }) => String(r.fields.ends_at ?? '') < todayStr
   )
-  const res = await fetch(
-    `${AT}/Haya_Promotions?filterByFormula=${formula}&maxRecords=50`,
-    { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return
 
-  const data = await res.json()
-  for (const rec of (data.records ?? []) as Array<{ id: string; fields: { item_code?: string; original_discount?: number } }>) {
+  for (const rec of due as Array<{ id: string; fields: { item_code?: string; original_discount?: number } }>) {
     const itemCode = rec.fields.item_code
     if (itemCode) {
       // Restore original discount and clear badge
-      const formula2  = encodeURIComponent(`{item_code}="${itemCode}"`)
-      const prodRes   = await fetch(
-        `${AT}/Products?filterByFormula=${formula2}&maxRecords=1`,
-        { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store' }
-      )
-      if (prodRes.ok) {
-        const prodData   = await prodRes.json()
-        const prodRecord = prodData.records?.[0]
-        if (prodRecord) {
-          await fetch(`${AT}/Products/${prodRecord.id}`, {
-            method: 'PATCH', headers,
-            body: JSON.stringify({
-              fields: {
-                discount_percent: rec.fields.original_discount ?? 0,
-                haya_badge:       '',
-              },
-            }),
-          })
-        }
+      const prodData   = await atList('Products', { limit: 1, match: { item_code: itemCode } })
+      const prodRecord = prodData.records?.[0]
+      if (prodRecord) {
+        await atPatch('Products', prodRecord.id, {
+          discount_percent: rec.fields.original_discount ?? 0,
+          haya_badge:       '',
+        })
       }
     }
-    // Mark promo as expired
-    await fetch(`${AT}/Haya_Promotions/${rec.id}`, {
-      method: 'PATCH', headers,
-      body: JSON.stringify({ fields: { status: 'expired' } }),
-    })
+    await atPatch('Haya_Promotions', rec.id, { status: 'expired' })
   }
 }
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
-
 async function fetchHighPriorityInsights(): Promise<HayaInsight[]> {
-  const formula = encodeURIComponent(`AND({status}='new',{priority}>=4)`)
-  const url     = `${AT_BASE}/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=20`
   try {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' })
-    if (!res.ok) return []
-    const data = await res.json()
+    // priority is text, so the >= 4 threshold is applied in JS
+    const data = await atList('Nexa_Insights', {
+      limit: 20, orderBy: 'priority', match: { status: 'new' },
+    })
     return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
       id:              r.id,
       insight_id:      String(r.fields.insight_id      ?? ''),
       package:         String(r.fields.package         ?? ''),
       insight_type:    String(r.fields.insight_type    ?? r.fields.package ?? ''),
-      insight:         String(r.fields.insight         ?? ''),
+      insight:         String(r.fields.insight_text    ?? r.fields.insight ?? ''),
       priority:        Number(r.fields.priority        ?? 0),
       status:          String(r.fields.status          ?? ''),
       action_required: String(r.fields.action_required ?? ''),
       item_code:       r.fields.item_code   ? String(r.fields.item_code)   : undefined,
       customer_id:     r.fields.customer_id ? String(r.fields.customer_id) : undefined,
-    }))
+    })).filter((i) => i.priority >= 4)
   } catch {
     return []
   }
 }
 
 async function patchStatus(id: string, status: string) {
-  await fetch(`${AT_BASE}/Nexa_Insights/${id}`, {
-    method:  'PATCH',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ fields: { status } }),
-  }).catch(() => {})
+  await atPatch('Nexa_Insights', id, { status })
 }
 
 export async function GET(req: NextRequest) {
@@ -160,12 +114,9 @@ export async function GET(req: NextRequest) {
   if (!isAdmin && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (!API_KEY || !BASE_ID) {
-    return NextResponse.json({ error: 'Airtable not configured' }, { status: 500 })
-  }
 
   // Run expiry check on every act cycle
-  await expirePromotions(API_KEY, BASE_ID).catch(() => {})
+  await expirePromotions().catch(() => {})
 
   const insights = await fetchHighPriorityInsights()
   if (insights.length === 0) {
@@ -190,7 +141,7 @@ export async function GET(req: NextRequest) {
 
       } else if (type === 'cmo_recommendation' && insight.status === 'actioned') {
         // Flash sale approved by owner — activate promotion
-        await handlePromotion(insight, API_KEY, BASE_ID)
+        await handlePromotion(insight)
         await patchStatus(insight.id, 'actioned')
         results[insight.insight_id] = 'actioned:promotion_activated'
 
