@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atCreate } from '@/lib/ai-tables'
+import { getPaidOrdersSince, getAllProducts } from '@/lib/supabase'
 import { callSonnet } from '@/lib/claude'
 import { runRevenuLeakAgent } from '@/lib/nexa-agents'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -46,25 +45,15 @@ type ItemLine = {
 }
 
 async function fetchPaidOrders(since: string): Promise<OrderRec[]> {
-  const formula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as OrderRec[]
+  try {
+    return (await getPaidOrdersSince(since, 500)) as unknown as OrderRec[]
+  } catch { return [] }
 }
 
 async function fetchProducts(): Promise<ProductRec[]> {
-  const fields = ['item_code', 'name', 'category', 'stock_quantity', 'final_price', 'cost_price']
-  const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&')
-  const res = await fetch(`${AT_BASE}/Products?${qs}&maxRecords=500`, {
-    headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-  })
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as ProductRec[]
+  try {
+    return (await getAllProducts()) as unknown as ProductRec[]
+  } catch { return [] }
 }
 
 function parseItems(json: string): ItemLine[] {
@@ -72,26 +61,18 @@ function parseItems(json: string): ItemLine[] {
 }
 
 async function writeInsight(text: string) {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
-        insight_id:   nanoid(),
-        insight_type: 'cfo_analysis',
-        insight_text: text,
-        priority:     '2',
-        status:       'new',
-        data_window:  'last_30_days',
-        created_at:   new Date().toISOString().split('T')[0],
-      },
-    }),
+  await atCreate('Nexa_Insights', {
+    insight_id:   nanoid(),
+    insight_type: 'cfo_analysis',
+    insight_text: text,
+    priority:     '2',
+    status:       'new',
+    data_window:  'last_30_days',
   })
 }
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   try {
     const thirtyAgo  = new Date(Date.now() - 30 * 86400000).toISOString()
@@ -237,21 +218,14 @@ Data: ${JSON.stringify(context, null, 2)}`
       if (deadStockProducts.length > 0) {
         const leaks = await runRevenuLeakAgent(deadStockProducts)
         for (const leak of leaks) {
-          await fetch(`${AT_BASE}/Nexa_Insights`, {
-            method:  'POST',
-            headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fields: {
-                insight_id:      nanoid(),
-                insight_type:    'revenue_leak',
-                insight_text:    leak.insight_text,
-                action_required: leak.action_required,
-                priority:        String(leak.priority ?? '2'),
-                status:          'new',
-                data_window:     'last_30_days',
-                created_at:      new Date().toISOString().split('T')[0],
-              },
-            }),
+          await atCreate('Nexa_Insights', {
+            insight_id:      nanoid(),
+            insight_type:    'revenue_leak',
+            insight_text:    leak.insight_text,
+            action_required: leak.action_required,
+            priority:        String(leak.priority ?? '2'),
+            status:          'new',
+            data_window:     'last_30_days',
           })
         }
         leakInsights = leaks.map(l => l.insight_text)

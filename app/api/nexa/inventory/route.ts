@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atCreate, atPatch } from '@/lib/ai-tables'
+import { getPaidOrdersSince, getAllProducts } from '@/lib/supabase'
 import { runInventoryAgent, InventoryAlert } from '@/lib/nexa-agents'
 import { getStoreContext } from '@/lib/ai-context'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
-const AT_BASE = `https://api.airtable.com/v0/${BASE_ID}`
 
 function checkAuth(req: NextRequest): boolean {
   const cronSecret = req.headers.get('x-cron-secret')
@@ -34,28 +33,16 @@ type ProductRec = {
 type ItemLine = { item_code?: string; quantity?: number }
 
 async function fetchProducts(): Promise<ProductRec[]> {
-  const fields = ['item_code', 'name', 'brand', 'category', 'stock_quantity', 'cost_price', 'final_price', 'haya_badge']
-  const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&')
-  const res = await fetch(`${AT_BASE}/Products?${qs}&maxRecords=500`, {
-    headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store',
-  })
-  if (!res.ok) return []
-  return ((await res.json()).records ?? []) as ProductRec[]
+  try {
+    return (await getAllProducts()) as unknown as ProductRec[]
+  } catch { return [] }
 }
 
 async function fetchRecentOrderItems(): Promise<Record<string, number>> {
   const since   = new Date(Date.now() - 30 * 86400000).toISOString()
-  const formula = encodeURIComponent(
-    `AND(IS_AFTER({created_at},"${since}"),{payment_status}="paid")`
-  )
-  const res = await fetch(
-    `${AT_BASE}/Orders?filterByFormula=${formula}&maxRecords=500&fields[]=items`,
-    { headers: { Authorization: `Bearer ${API_KEY}` }, cache: 'no-store' }
-  )
-  if (!res.ok) return {}
-  const data = await res.json()
+  const records = await getPaidOrdersSince(since, 500).catch(() => [])
   const unitsSold: Record<string, number> = {}
-  for (const r of (data.records ?? []) as Array<{ fields: { items?: string } }>) {
+  for (const r of records as unknown as Array<{ fields: { items?: string } }>) {
     try {
       const items: ItemLine[] = JSON.parse(r.fields.items ?? '[]')
       for (const item of items) {
@@ -68,30 +55,19 @@ async function fetchRecentOrderItems(): Promise<Record<string, number>> {
 }
 
 async function writeInsight(alert: InventoryAlert) {
-  await fetch(`${AT_BASE}/Nexa_Insights`, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
-        insight_id:      nanoid(),
-        insight_type:    'inventory_alert',
-        insight_text:    alert.insight_text,
-        action_required: alert.action_required,
-        priority:        String(alert.priority ?? '2'),
-        status:          'new',
-        data_window:     'last_30_days',
-        created_at:      new Date().toISOString().split('T')[0],
-      },
-    }),
+  await atCreate('Nexa_Insights', {
+    insight_id:      nanoid(),
+    insight_type:    'inventory_alert',
+    insight_text:    alert.insight_text,
+    action_required: alert.action_required,
+    priority:        String(alert.priority ?? '2'),
+    status:          'new',
+    data_window:     'last_30_days',
   })
 }
 
 async function patchLowStockBadge(productId: string) {
-  await fetch(`${AT_BASE}/Products/${productId}`, {
-    method:  'PATCH',
-    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: { haya_badge: 'LOW STOCK' } }),
-  })
+  await atPatch('Products', productId, { haya_badge: 'LOW STOCK' })
 }
 
 async function sendWhatsAppAlert(message: string) {
@@ -110,7 +86,6 @@ async function sendWhatsAppAlert(message: string) {
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!API_KEY || !BASE_ID) return NextResponse.json({ error: 'Not configured' }, { status: 500 })
 
   try {
     const [products, unitsSold] = await Promise.all([
