@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
@@ -11,30 +12,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid phone" }, { status: 400 });
     }
 
-    const url = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Haya_Waitlist`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fields: {
-          email: email.trim().toLowerCase(),
-          phone: phone.trim(),
-          source: "coming_soon_page",
-          signed_up_at: new Date().toISOString().split("T")[0],
-          lang: lang || "en",
-          status: "new",
-        },
-      }),
+    const { error } = await supabase.from("waitlist").insert({
+      email:        email.trim().toLowerCase(),
+      phone:        phone.trim(),
+      source:       "coming_soon_page",
+      signed_up_at: new Date().toISOString().split("T")[0],
+      lang:         lang || "en",
+      status:       "new",
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Airtable error:", err);
-      return NextResponse.json({ error: "Airtable error" }, { status: 500 });
+    if (error) {
+      console.error("Waitlist insert error:", error.message);
+      return NextResponse.json({ error: "Could not join waitlist" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

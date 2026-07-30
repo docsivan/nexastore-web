@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_KEY = process.env.AIRTABLE_API_KEY!
-const BASE_ID = process.env.AIRTABLE_BASE_ID!
+import { supabase } from '@/lib/supabase'
+import { writeSignal } from '@/lib/memory'
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,29 +45,19 @@ export async function POST(req: NextRequest) {
         ? 'abandoned'
         : 'browsed'
 
-    await fetch(`https://api.airtable.com/v0/${BASE_ID}/Haya_Conversations`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        fields: {
-          session_id,
-          customer_id:   customer_phone ?? '',
-          customer_name: customer_name  ?? '',
-          phone:         customer_phone ?? '',
-          clinic_name:   clinic_name    ?? '',
-          page_url:      page_url       ?? '',
-          transcript,
-          message_count: messages.length,
-          intent_summary: intent_summary ?? '',
-          outcome,
-          language:      language ?? 'en',
-          created_at:    new Date().toISOString(),
-          analysed:      false,
-        },
-      }),
+    await supabase.from('conversations').insert({
+      session_id,
+      customer_id:    customer_phone ?? '',
+      customer_name:  customer_name  ?? '',
+      phone:          customer_phone ?? '',
+      clinic_name:    clinic_name    ?? '',
+      page_url:       page_url       ?? '',
+      transcript,
+      message_count:  messages.length,
+      intent_summary: intent_summary ?? '',
+      outcome,
+      language:       language ?? 'en',
+      analysed:       false,
     })
 
     // Also write signal to Haya_Memory with 2-sentence summary
@@ -79,24 +68,14 @@ export async function POST(req: NextRequest) {
       ? `Visitor discussed: ${intent_summary || 'general enquiry'}. Outcome: ${outcome}.`
       : ''
 
-    await fetch(`https://api.airtable.com/v0/${BASE_ID}/Haya_Memory`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        fields: {
-          session_id,
-          customer_id:  customer_phone ?? '',
-          signal_type:  'chat',
-          action:       'chat_ended',
-          outcome,
-          page_url:     page_url ?? '',
-          chat_summary,
-          created_at:   new Date().toISOString(),
-        },
-      }),
+    await writeSignal({
+      session_id,
+      customer_id: customer_phone ?? '',
+      signal_type: 'chat',
+      action:      'chat_ended',
+      outcome,
+      page_url:    page_url ?? '',
+      chat_summary,
     })
 
     return NextResponse.json({ ok: true, outcome })

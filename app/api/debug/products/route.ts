@@ -1,23 +1,28 @@
 import { NextResponse } from 'next/server'
+import { getProducts } from '@/lib/supabase'
 
+/**
+ * Connectivity probe for the Supabase product catalogue.
+ * Reports only whether credentials are present — never their values.
+ */
 export async function GET() {
-  const baseId = process.env.AIRTABLE_BASE_ID
-  const apiKey = process.env.AIRTABLE_API_KEY
-
-  const url = `https://api.airtable.com/v0/${baseId}/Products?maxRecords=3&filterByFormula={is_active}=1`
-
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${apiKey}` }
-  })
-  const data = await res.json()
-
-  return NextResponse.json({
-    baseId: baseId?.substring(0, 8),
-    apiKeyLen: apiKey?.length ?? 0,
-    apiKeyStart: apiKey?.substring(0, 8),
-    status: res.status,
-    recordCount: data.records?.length ?? 0,
-    firstProduct: data.records?.[0]?.fields?.name ?? 'none',
-    error: data.error ?? null
-  })
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  try {
+    const records = await getProducts()
+    return NextResponse.json({
+      supabaseUrl,
+      hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      recordCount:   records.length,
+      firstProduct:  records[0]?.fields?.name ?? 'none',
+      error:         null,
+    })
+  } catch (e) {
+    return NextResponse.json({
+      supabaseUrl,
+      hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      recordCount:   0,
+      firstProduct:  'none',
+      error:         e instanceof Error ? e.message : String(e),
+    })
+  }
 }

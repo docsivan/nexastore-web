@@ -1,40 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { atList, atPatch } from '@/lib/ai-tables'
+import { PLATFORM_NAME } from '@/lib/brand'
 
-const API_KEY      = process.env.AIRTABLE_API_KEY!
-const BASE_ID      = process.env.AIRTABLE_BASE_ID!
-const AT_BASE      = `https://api.airtable.com/v0/${BASE_ID}`
 const CRON_SECRET  = process.env.CRON_SECRET
-const SITE_URL     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nexastore.io'
-
-const headers = {
-  Authorization: `Bearer ${API_KEY}`,
-  'Content-Type': 'application/json',
-}
+const SITE_URL     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nexastore-eight.vercel.app'
 
 async function getFailedOrders() {
-  const formula = encodeURIComponent(`{payment_status}="failed"`)
-  const res = await fetch(`${AT_BASE}/Orders?filterByFormula=${formula}`, {
-    headers: { Authorization: `Bearer ${API_KEY}` },
-    cache: 'no-store',
-  })
-  const data = await res.json()
-  return data.records ?? []
+  const { records } = await atList('Orders', { match: { payment_status: 'failed' } })
+  return records
 }
 
 async function updateOrderNotes(recordId: string, notes: Record<string, string>, paymentStatus: string) {
-  await fetch(`${AT_BASE}/Orders/${recordId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ fields: { notes: JSON.stringify(notes), payment_status: paymentStatus } }),
+  await atPatch('Orders', recordId, {
+    notes: JSON.stringify(notes),
+    payment_status: paymentStatus,
   })
 }
 
 async function sendWhatsAppReminder(phone: string, orderId: string, type: '1hr' | '1day' | 'Cancelled') {
   const retryUrl = `${SITE_URL}/checkout/failed?id=${orderId}`
   const messages = {
-    '1hr':       `Hello! Your NexaStore order ${orderId} is awaiting payment. Retry here: ${retryUrl}`,
-    '1day':      `Final reminder: Your NexaStore order ${orderId} will be cancelled in a few hours if payment is not completed.`,
-    'Cancelled': `Your NexaStore order ${orderId} has been cancelled. You can place a new order at nexastore.io`,
+    '1hr':       `Hello! Your ${PLATFORM_NAME} order ${orderId} is awaiting payment. Retry here: ${retryUrl}`,
+    '1day':      `Final reminder: Your ${PLATFORM_NAME} order ${orderId} will be cancelled in a few hours if payment is not completed.`,
+    'Cancelled': `Your ${PLATFORM_NAME} order ${orderId} has been cancelled. You can place a new order at ${SITE_URL}`,
   }
   console.log(`[WhatsApp ${type}] To: ${phone} — ${messages[type]}`)
   return true
