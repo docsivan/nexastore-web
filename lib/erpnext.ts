@@ -104,8 +104,9 @@ export async function createCustomer(data: {
     doctype: 'Customer',
     customer_name: data.customer_name,
     customer_type: 'Individual',
-    customer_group: 'All Customer Groups',
-    territory: 'All Territories',
+    // Group-type values are rejected by ERPNext; these are leaf nodes.
+    customer_group: process.env.ERPNEXT_CUSTOMER_GROUP || 'Commercial',
+    territory: process.env.ERPNEXT_TERRITORY || 'Oman',
     mobile_no: data.phone,
     email_id: data.email,
   })
