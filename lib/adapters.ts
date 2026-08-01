@@ -1,21 +1,16 @@
 /**
  * lib/adapters.ts
- * Converts Airtable field-named records into the Product type
- * used by the cart, ProductCard, and all existing UI components.
- * This keeps the UI layer unchanged while the data layer is Airtable.
+ * Converts record-shaped rows into the Product type used by the cart,
+ * ProductCard, and all existing UI components. Keeps the UI layer unchanged
+ * while the data layer is Supabase.
  */
 
 import { AirtableProduct, ProductFields } from './airtableTypes'
 import { Product, ProductCategory } from './types'
 
 
-function resolveImage(image_url: string, product_page_url: string, name: string, item_code = ''): string {
-  if (image_url) {
-    if (image_url.startsWith('https://erp.hospitalshop.com')) {
-      return `/api/img?url=${encodeURIComponent(image_url)}&code=${encodeURIComponent(item_code)}`
-    }
-    return image_url
-  }
+function resolveImage(image_url: string, product_page_url: string, name: string): string {
+  if (image_url) return image_url
   if (product_page_url && /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(product_page_url)) {
     return product_page_url
   }
@@ -48,7 +43,7 @@ export function adaptAirtableProduct(ap: AirtableProduct): Product {
     discount_percent: f.discount_percent != null ? Number(f.discount_percent) : undefined,
     priceVat:        vatPrice,
     currency:     'USD',
-    images:       [resolveImage(f.image_url ?? '', f.product_page_url, f.name, f.item_code)],
+    images:       [resolveImage(f.image_url ?? '', f.product_page_url, f.name)],
     stock:        Number(f.stock_quantity) || 0,
     unit:         f.pack_size || 'unit',
     unitSize:     f.pack_size,
