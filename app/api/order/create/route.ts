@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createOrder, findOrCreateCustomer } from '@/lib/supabase'
 import { syncOrderToERP } from '@/lib/erpnext-sync'
+import { waitUntil } from '@vercel/functions'
 import { OrderItem } from '@/lib/airtableTypes'
 
 export const dynamic = 'force-dynamic'
@@ -95,10 +96,12 @@ export async function POST(req: NextRequest) {
     })
 
     // ── 4. Mirror into ERPNext ──────────────────────────────────────────────
-    // Fire and forget: the customer must never wait on ERP, and an ERP outage
-    // must never fail a paid order. syncOrderToERP never throws; failures are
-    // written to ai_log for replay.
-    void syncOrderToERP({
+    // The customer must never wait on ERP, and an ERP outage must never fail a
+    // paid order — but a bare fire-and-forget promise does NOT survive on
+    // serverless: the invocation is frozen once the response is returned, so
+    // the sync silently never ran in production (verified). waitUntil keeps the
+    // invocation alive for the background work without delaying the response.
+    waitUntil(syncOrderToERP({
       order_id:        order.order_id,
       customer_name,
       clinic_name:     company ?? '',
@@ -112,7 +115,7 @@ export async function POST(req: NextRequest) {
       if (r.skipped) console.warn(`[erp] ${order.order_id} skipped: ${r.error}`)
       else if (r.success) console.log(`[erp] ${order.order_id} synced → ${r.erp_order_id}`)
       else console.error(`[erp] ${order.order_id} sync failed: ${r.error}`)
-    })
+    }))
 
     return NextResponse.json(
       {
