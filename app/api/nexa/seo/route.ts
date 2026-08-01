@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { atGetPath, atList, atCreate, atPatch } from '@/lib/ai-tables'
+import { atGetPath, atUpsert } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
@@ -43,14 +43,8 @@ Include @context, @type, name, description, sku/identifier, brand, offers (with 
 async function patchHayaSEO(item_code: string, schema_json: string) {
   if (!item_code) return
   try {
-    const checkData = await atList('Nexa_SEO', { limit: 1, match: { item_code } })
-    const existing  = checkData.records?.[0]
-
-    if (existing) {
-      await atPatch('Nexa_SEO', existing.id, { schema_json })
-    } else {
-      await atCreate('Nexa_SEO', { item_code, schema_json })
-    }
+    // Atomic upsert on the unique item_code — avoids a check-then-create race.
+    await atUpsert('Nexa_SEO', { item_code, schema_json }, 'item_code')
   } catch {}
 }
 

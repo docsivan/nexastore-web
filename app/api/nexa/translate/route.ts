@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { atList, atCreate, atPatch } from '@/lib/ai-tables'
+import { atList, atUpsert } from '@/lib/ai-tables'
 import { callSonnet } from '@/lib/claude'
 import { getStoreContext } from '@/lib/ai-context'
 
@@ -71,22 +71,17 @@ For meta_description_ar: include key benefits and ${storeCtx.storeName} brand me
 }
 
 async function upsertSeoRecord(translation: Translation): Promise<void> {
-  const checkData = await atList('Nexa_SEO', {
-    limit: 1,
-    match: { item_code: translation.item_code },
-  })
-  const existing = checkData.records?.[0]
-
-  const fields = {
-    meta_title_ar:       translation.meta_title_ar,
-    meta_description_ar: translation.meta_description_ar,
-  }
-
-  if (existing) {
-    await atPatch('Nexa_SEO', existing.id, fields)
-  } else {
-    await atCreate('Nexa_SEO', { item_code: translation.item_code, ...fields })
-  }
+  // Atomic upsert on the unique item_code. A check-then-create here raced and
+  // produced duplicate-key errors when the same product was processed twice.
+  await atUpsert(
+    'Nexa_SEO',
+    {
+      item_code:           translation.item_code,
+      meta_title_ar:       translation.meta_title_ar,
+      meta_description_ar: translation.meta_description_ar,
+    },
+    'item_code'
+  )
 }
 
 export async function GET(req: NextRequest) {

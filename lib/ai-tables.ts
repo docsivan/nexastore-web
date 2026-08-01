@@ -114,6 +114,8 @@ export interface AtListOptions {
   limit?: number
   /** Equality filters, in Airtable field naming. */
   match?: Record<string, unknown>
+  /** Numeric comparisons, in Airtable field naming: { opportunity_score: { gt: 50 } } */
+  compare?: Record<string, { gt?: number; gte?: number; lt?: number; lte?: number }>
 }
 
 /** Airtable-shaped list. Returns `{ records }`, never throws. */
@@ -121,13 +123,23 @@ export async function atList(
   table: string,
   opts: AtListOptions = {}
 ): Promise<{ records: Array<{ id: string; fields: any; createdTime?: string }> }> {
-  const { orderBy = 'created_at', since, ascending = false, limit = 500, match } = opts
+  const { orderBy = 'created_at', since, ascending = false, limit = 500, match, compare } = opts
 
   const run = async (withOrder: boolean) => {
+    const alias = aliasesFor(table)
     let q = supabase.from(resolveTable(table)).select('*')
     if (match) {
       for (const [k, v] of Object.entries(match)) {
-        q = q.eq(aliasesFor(table)[k] ?? k, v as any)
+        q = q.eq(alias[k] ?? k, v as any)
+      }
+    }
+    if (compare) {
+      for (const [k, ops] of Object.entries(compare)) {
+        const col = alias[k] ?? k
+        if (ops.gt  !== undefined) q = q.gt(col, ops.gt)
+        if (ops.gte !== undefined) q = q.gte(col, ops.gte)
+        if (ops.lt  !== undefined) q = q.lt(col, ops.lt)
+        if (ops.lte !== undefined) q = q.lte(col, ops.lte)
       }
     }
     if (withOrder && since) q = q.gte(orderBy, since)
@@ -207,10 +219,23 @@ export async function atGetPath(
       match[m[1]] = m[2] === '1'
       consumed += m[0]
     }
+    // {field}=TRUE() / {field}=FALSE() -> boolean
+    for (const m of Array.from(formula.matchAll(/\{(\w+)\}\s*=\s*(TRUE|FALSE)\(\)/gi))) {
+      match[m[1]] = m[2].toUpperCase() === 'TRUE'
+      consumed += m[0]
+    }
+    // {field}>N / {field}>=N / {field}<N / {field}<=N -> numeric comparison
+    const compare: Record<string, { gt?: number; gte?: number; lt?: number; lte?: number }> = {}
+    for (const m of Array.from(formula.matchAll(/\{(\w+)\}\s*(>=|<=|>|<)\s*(-?[\d.]+)/g))) {
+      const key = { '>': 'gt', '>=': 'gte', '<': 'lt', '<=': 'lte' }[m[2]] as 'gt'|'gte'|'lt'|'lte'
+      compare[m[1]] = { ...(compare[m[1]] ?? {}), [key]: Number(m[3]) }
+      consumed += m[0]
+    }
     if (Object.keys(match).length) opts.match = match
+    if (Object.keys(compare).length) opts.compare = compare
 
     const leftover = formula
-      .replace(/AND|OR|NOT|IS_AFTER|IS_BEFORE|TRUE\(\)|FALSE\(\)/g, '')
+      .replace(/AND|OR|NOT|IS_AFTER|IS_BEFORE|TRUE\(\)|FALSE\(\)|BLANK\(\)/g, '')
       .replace(/[(),\s]/g, '')
     const consumedStripped = consumed.replace(/[(),\s]/g, '')
     if (leftover && !consumedStripped.includes(leftover.slice(0, 8))) {
