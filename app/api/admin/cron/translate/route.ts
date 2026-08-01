@@ -27,13 +27,13 @@ async function fetchUntranslated(): Promise<ProductRow[]> {
   const records = await getProducts()
   return records
     // Skip products that already have an Arabic name
-    .filter((r) => !r.fields.nameAr)
+    .filter((r) => !r.nameAr)
     .map((r) => ({
       id:        r.id,
-      name:      String(r.fields.name ?? ''),
-      category:  String(r.fields.category ?? ''),
-      brand:     String(r.fields.brand ?? ''),
-      pack_size: String(r.fields.pack_size ?? ''),
+      name:      String(r.name ?? ''),
+      category:  String(r.category ?? ''),
+      brand:     String(r.brand ?? ''),
+      pack_size: String(r.pack_size ?? ''),
     }))
 }
 
@@ -77,12 +77,10 @@ async function patchTranslations(translations: Translation[]): Promise<number> {
     .filter(t => t.nameAr)
     .map(t => ({
       id:     t.id,
-      fields: {
-        // productFieldsToColumns maps these to name_ar / category_ar / description_ar
-        nameAr:        t.nameAr,
-        categoryAr:    t.categoryAr,
-        descriptionAr: t.descriptionAr,
-      },
+      // productFieldsToColumns maps these to name_ar / category_ar / description_ar
+      nameAr:        t.nameAr,
+      categoryAr:    t.categoryAr,
+      descriptionAr: t.descriptionAr,
     }))
 
   if (batch.length === 0) return 0

@@ -27,9 +27,9 @@ export async function GET(req: NextRequest) {
 
   // Up to 10 active products that have no image yet
   const listData = await atList('Products', { limit: 200, match: { is_active: true } })
-  const records: { id: string; fields: { name?: string; category?: string; brand?: string; item_code?: string; image_url?: string } }[] =
+  const records: Array<{ id: string; name?: string; category?: string; brand?: string; item_code?: string; image_url?: string }> =
     (listData.records ?? [])
-      .filter((r) => !r.fields.image_url)
+      .filter((r) => !r.image_url)
       .slice(0, 10)
 
   if (records.length === 0) {
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   const results: { item_code: string; url: string; source: string }[] = []
 
   for (const record of records) {
-    const category = (record.fields.category ?? '').toLowerCase().replace(/\s+/g, '-')
+    const category = (record.category ?? '').toLowerCase().replace(/\s+/g, '-')
     const imgUrl   = CATEGORY_IMAGES[category] ?? CATEGORY_IMAGES['default']
 
     // Persist the image URL
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
     if (patched) {
       results.push({
-        item_code: record.fields.item_code ?? record.id,
+        item_code: record.item_code ?? record.id,
         url:       imgUrl,
         source:    'unsplash',
       })
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
         timestamp:    new Date().toISOString(),
         trigger_type: 'image',
         action:       'assign_image',
-        target:       record.fields.item_code ?? record.id,
+        target:       record.item_code ?? record.id,
         field:        'image_url',
         value:        imgUrl,
         reason:       'Product had no image',

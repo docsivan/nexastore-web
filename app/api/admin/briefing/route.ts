@@ -24,20 +24,20 @@ export async function GET(req: NextRequest) {
     // Yesterday's orders — fetched from yStart, then bounded to before today
     const todayStart = today.toISOString().slice(0, 10)
     const yOrders = (await getOrdersSince(yStart, 500)).filter((o) => {
-      const created = String((o.fields as OrderFields).created_at ?? o.createdTime ?? '')
+      const created = String((o as unknown as OrderFields).created_at ?? o.createdTime ?? '')
       return created >= yStart && created < todayStart
     })
 
-    const yRevenue = yOrders.reduce((s, o) => s + ((o.fields as OrderFields).total ?? 0), 0)
-    const pendingDispatch = yOrders.filter(o => (o.fields as OrderFields).delivery_status === 'processing').length
+    const yRevenue = yOrders.reduce((s, o) => s + ((o as unknown as OrderFields).total ?? 0), 0)
+    const pendingDispatch = yOrders.filter(o => (o as unknown as OrderFields).delivery_status === 'processing').length
 
     // Low stock
     const lowStock = await getFastMovingProducts(10, 20)
 
     const lowStockList = lowStock.map(p => ({
-      name: (p.fields as ProductFields).name,
-      item_code: (p.fields as ProductFields).item_code,
-      stock: (p.fields as ProductFields).stock_quantity,
+      name: (p as unknown as ProductFields).name,
+      item_code: (p as unknown as ProductFields).item_code,
+      stock: (p as unknown as ProductFields).stock_quantity,
     }))
 
     // Top 5 products last 7 days
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     const counts: Record<string, { name: string; count: number }> = {}
     for (const order of last7Orders) {
-      const f = order.fields as OrderFields
+      const f = order as OrderFields
       try {
         const items = typeof f.items === 'string' ? JSON.parse(f.items) : f.items
         if (Array.isArray(items)) {

@@ -39,10 +39,10 @@ async function selectTopic(): Promise<TopicCandidate | null> {
     {
       for (const r of (data.records ?? [])) {
         candidates.push({
-          topic:    String(r.fields.query    ?? ''),
-          category: String(r.fields.category ?? 'general'),
+          topic:    String(r.query    ?? ''),
+          category: String(r.category ?? 'general'),
           source:   'gsc',
-          score:    Number(r.fields.opportunity_score ?? 0),
+          score:    Number(r.opportunity_score ?? 0),
         })
       }
     }
@@ -56,10 +56,10 @@ async function selectTopic(): Promise<TopicCandidate | null> {
     {
       for (const r of (data.records ?? [])) {
         candidates.push({
-          topic:    String(r.fields.topic    ?? ''),
-          category: String(r.fields.category ?? 'general'),
+          topic:    String(r.topic    ?? ''),
+          category: String(r.category ?? 'general'),
           source:   'trends',
-          score:    Number(r.fields.trend_value ?? 0) * 2,
+          score:    Number(r.trend_value ?? 0) * 2,
         })
       }
     }
@@ -72,12 +72,12 @@ async function selectTopic(): Promise<TopicCandidate | null> {
     )
     {
       for (const r of (data.records ?? [])) {
-        const insight = String(r.fields.insight ?? '')
+        const insight = String(r.insight ?? '')
         candidates.push({
           topic:    insight.slice(0, 100),
-          category: String(r.fields.category ?? 'general'),
+          category: String(r.category ?? 'general'),
           source:   'insight',
-          score:    Number(r.fields.priority ?? 3) * 20,
+          score:    Number(r.priority ?? 3) * 20,
         })
       }
     }

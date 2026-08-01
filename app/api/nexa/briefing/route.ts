@@ -15,11 +15,11 @@ async function fetchNewInsights(): Promise<{ id: string; insight: string; packag
   try {
     const formula = encodeURIComponent(`{status}='new'`)
     const data = await atGetPath(`/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=desc&maxRecords=3`)
-    return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
+    return (data.records ?? []).map((r: Record<string, unknown> & { id: string }) => ({
       id:       r.id,
-      insight:  r.fields.insight as string ?? '',
-      package:  r.fields.package as string ?? '',
-      priority: r.fields.priority as number ?? 0,
+      insight:  r.insight as string ?? '',
+      package:  r.package as string ?? '',
+      priority: r.priority as number ?? 0,
     }))
   } catch {
     return []
@@ -30,9 +30,9 @@ async function fetchCfoInsights(): Promise<{ id: string; insight_text: string }[
   try {
     const formula = encodeURIComponent(`AND({insight_type}="cfo_analysis",{status}="new")`)
     const data = await atGetPath(`/Nexa_Insights?filterByFormula=${formula}&sort[0][field]=priority&sort[0][direction]=asc&maxRecords=2`)
-    return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
+    return (data.records ?? []).map((r: Record<string, unknown> & { id: string }) => ({
       id:           r.id,
-      insight_text: String(r.fields.insight_text ?? ''),
+      insight_text: String(r.insight_text ?? ''),
     }))
   } catch {
     return []
@@ -75,24 +75,24 @@ export async function GET(req: NextRequest) {
     fetchCfoInsights(),
   ])
 
-  type OrderRec = { fields: { total?: number; payment_status?: string; delivery_status?: string; items?: string; order_id?: string; customer_name?: string; created_at?: string } }
-  type StockRec = { fields: { name?: string; item_code?: string; stock_quantity?: number } }
+  type OrderRec = { total?: number; payment_status?: string; delivery_status?: string; items?: string; order_id?: string; customer_name?: string; created_at?: string }
+  type StockRec = { name?: string; item_code?: string; stock_quantity?: number }
 
   const orders:          OrderRec[] = ordersData.records           ?? []
   const pendingDispatch: OrderRec[] = pendingDispatchData.records  ?? []
   const overdueOrders:   OrderRec[] = overdueData.records          ?? []
   const lowStock:        StockRec[] = stockData.records            ?? []
 
-  const yesterdayRevenue    = orders.reduce((s, o) => s + (o.fields.total ?? 0), 0)
-  const pendingPaymentsYest = orders.filter(o => o.fields.payment_status === 'pending').length
-  const outOfStock          = lowStock.filter(p => (p.fields.stock_quantity ?? 0) === 0)
-  const criticalLow         = lowStock.filter(p => (p.fields.stock_quantity ?? 0) > 0)
+  const yesterdayRevenue    = orders.reduce((s, o) => s + (o.total ?? 0), 0)
+  const pendingPaymentsYest = orders.filter(o => o.payment_status === 'pending').length
+  const outOfStock          = lowStock.filter(p => (p.stock_quantity ?? 0) === 0)
+  const criticalLow         = lowStock.filter(p => (p.stock_quantity ?? 0) > 0)
 
   const revenueByProduct: Record<string, { name: string; revenue: number }> = {}
   for (const order of orders) {
     try {
       const items: { item_code?: string; name?: string; final_price?: number; quantity?: number }[] =
-        JSON.parse(order.fields.items ?? '[]')
+        JSON.parse(order.items ?? '[]')
       for (const item of items) {
         const key = item.item_code ?? item.name ?? 'unknown'
         if (!revenueByProduct[key]) revenueByProduct[key] = { name: item.name ?? key, revenue: 0 }
@@ -106,9 +106,9 @@ export async function GET(req: NextRequest) {
     .map(p => `${p.name}: \${p.revenue.toFixed(2)}`)
 
   const urgentContext = {
-    low_stock:        criticalLow.map(p => `${p.fields.name} (${p.fields.item_code}): ${p.fields.stock_quantity} units left`),
-    out_of_stock:     outOfStock.map(p => `${p.fields.name} (${p.fields.item_code})`),
-    overdue_orders:   overdueOrders.map(o => `${o.fields.order_id} — ${o.fields.customer_name}: \${(o.fields.total ?? 0).toFixed(2)}`),
+    low_stock:        criticalLow.map(p => `${p.name} (${p.item_code}): ${p.stock_quantity} units left`),
+    out_of_stock:     outOfStock.map(p => `${p.name} (${p.item_code})`),
+    overdue_orders:   overdueOrders.map(o => `${o.order_id} — ${o.customer_name}: \${(o.total ?? 0).toFixed(2)}`),
     pending_dispatch: pendingDispatch.length,
   }
 
@@ -121,9 +121,9 @@ export async function GET(req: NextRequest) {
     )
   } catch {
     if (outOfStock.length > 0) {
-      urgentAction = `Restock ${outOfStock[0].fields.name} immediately — it is completely out of stock and blocking sales.`
+      urgentAction = `Restock ${outOfStock[0].name} immediately — it is completely out of stock and blocking sales.`
     } else if (criticalLow.length > 0) {
-      urgentAction = `Reorder ${criticalLow[0].fields.name} now — only ${criticalLow[0].fields.stock_quantity} units left.`
+      urgentAction = `Reorder ${criticalLow[0].name} now — only ${criticalLow[0].stock_quantity} units left.`
     } else if (overdueOrders.length > 0) {
       urgentAction = `Follow up on ${overdueOrders.length} overdue unpaid order${overdueOrders.length > 1 ? 's' : ''} — chase customers to complete payment.`
     } else {
@@ -142,8 +142,8 @@ export async function GET(req: NextRequest) {
     pending_payments:  pendingPaymentsYest,
     pending_dispatch:  pendingDispatch.length,
     overdue_orders:    overdueOrders.length,
-    out_of_stock:      outOfStock.map(p => `${p.fields.name} (${p.fields.item_code})`),
-    low_stock:         criticalLow.map(p => `${p.fields.name}: ${p.fields.stock_quantity} left`),
+    out_of_stock:      outOfStock.map(p => `${p.name} (${p.item_code})`),
+    low_stock:         criticalLow.map(p => `${p.name}: ${p.stock_quantity} left`),
     top_products:      top5Products,
     action_required:   urgentAction,
     haya_insights:     insightsBlock || 'None today',

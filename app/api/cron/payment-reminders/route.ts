@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   try {
     const orders = await getFailedOrders()
     for (const record of orders) {
-      const f = record.fields
+      const f = record
       results.processed++
       let reminder: Record<string, string> = {}
       try { reminder = JSON.parse(f.notes || '{}') } catch { continue }

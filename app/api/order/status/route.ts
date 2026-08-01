@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     // Return only the fields safe to expose to the client
     const { order_id: id, created_at, payment_status, delivery_status, total, customer_name } =
-      order.fields
+      order
 
     return NextResponse.json({
       data: { order_id: id, created_at, payment_status, delivery_status, total, customer_name },

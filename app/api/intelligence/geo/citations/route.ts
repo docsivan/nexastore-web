@@ -13,13 +13,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const rows = await readAiTable('ai_citations', { limit: 50, orderBy: 'fetched_at' })
-    const citations = asRecords(rows).map((r: { fields: Record<string, unknown> }) => ({
-      query:      String(r.fields.query      ?? ''),
-      platform:   String(r.fields.platform   ?? 'google'),
-      cited:      Boolean(r.fields.cited),
-      position:   Number(r.fields.position   ?? 0),
-      context:    String(r.fields.context    ?? ''),
-      fetched_at: String(r.fields.fetched_at ?? ''),
+    const citations = asRecords(rows).map((r: Record<string, unknown>) => ({
+      query:      String(r.query      ?? ''),
+      platform:   String(r.platform   ?? 'google'),
+      cited:      Boolean(r.cited),
+      position:   Number(r.position   ?? 0),
+      context:    String(r.context    ?? ''),
+      fetched_at: String(r.fetched_at ?? ''),
     }))
     return NextResponse.json({ citations }, { headers: { 'Cache-Control': 's-maxage=300' } })
   } catch (e) {

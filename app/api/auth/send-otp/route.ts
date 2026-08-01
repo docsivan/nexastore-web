@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const customer = await getCustomerByPhone(cleaned)
     if (!customer) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    const f = customer.fields
+    const f = customer
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     const expiry = Date.now() + 10 * 60 * 1000 // 10 minutes
 

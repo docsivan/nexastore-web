@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         payment_reference: tran_ref,
       })
 
-      const f = order.fields
+      const f = order
       const { customer } = await findOrCreateCustomer({
         customer_name: f.customer_name,
         phone:         f.phone,
@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
 
       await recordSuccessfulOrder(
         customer.id,
-        customer.fields.total_orders ?? 0,
-        customer.fields.total_spent  ?? 0,
+        customer.total_orders ?? 0,
+        customer.total_spent  ?? 0,
         f.total
       )
 

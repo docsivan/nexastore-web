@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
   const sigFormula = encodeURIComponent(`IS_AFTER({created_at},"${since30}")`)
   const sigRes   = await atFetch(`/Haya_Memory?filterByFormula=${sigFormula}&maxRecords=200&sort[0][field]=created_at&sort[0][direction]=desc`)
   const signals: Record<string, unknown>[] = (sigRes.records ?? []).map(
-    (r: { fields: Record<string, unknown> }) => r.fields
+    (r: Record<string, unknown>) => r
   )
 
   // ── Fetch orders (90 days for patterns) ───────────────────────────────────
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   )
   const ordRes  = await atFetch(`/Orders?filterByFormula=${ordFormula}&maxRecords=200`)
   const orders: Record<string, unknown>[] = (ordRes.records ?? []).map(
-    (r: { fields: Record<string, unknown> }) => r.fields
+    (r: Record<string, unknown>) => r
   )
 
   const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
@@ -238,7 +238,7 @@ export async function GET(req: NextRequest) {
 
   if (conversations.length > 0) {
     const transcriptBlock = conversations
-      .map((r: any) => `---\nOutcome: ${r.fields.outcome}\n${r.fields.transcript}\n---`)
+      .map((r: any) => `---\nOutcome: ${r.outcome}\n${r.transcript}\n---`)
       .join('\n')
 
     const convoPrompt = `You are the AI learning engine for ${storeCtx.storeName}.

@@ -13,24 +13,24 @@ export async function GET(req: NextRequest) {
     const orders = records
       .map(o => {
         let items = []
-        try { items = JSON.parse(o.fields.items) } catch {}
+        try { items = JSON.parse(o.items) } catch {}
         return {
           record_id:         o.id,
-          order_id:          o.fields.order_id,
-          created_at:        o.fields.created_at || o.createdTime || '',
-          customer_name:     o.fields.customer_name,
-          clinic_name:       o.fields.clinic_name,
-          phone:             o.fields.phone,
-          email:             o.fields.email,
-          city:              o.fields.city,
+          order_id:          o.order_id,
+          created_at:        o.created_at || o.createdTime || '',
+          customer_name:     o.customer_name,
+          clinic_name:       o.clinic_name,
+          phone:             o.phone,
+          email:             o.email,
+          city:              o.city,
           items,
-          subtotal:          o.fields.subtotal,
-          delivery_charge:   o.fields.delivery_charge,
-          total:             o.fields.total,
-          payment_status:    o.fields.payment_status,
-          delivery_status:   o.fields.delivery_status,
-          payment_reference: o.fields.payment_reference,
-          notes:             o.fields.notes,
+          subtotal:          o.subtotal,
+          delivery_charge:   o.delivery_charge,
+          total:             o.total,
+          payment_status:    o.payment_status,
+          delivery_status:   o.delivery_status,
+          payment_reference: o.payment_reference,
+          notes:             o.notes,
         }
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

@@ -23,9 +23,9 @@ async function fetchTrends() {
   const data = await atGet(
     `/Haya_Trends?maxRecords=10&sort[0][field]=trend_score&sort[0][direction]=desc`
   )
-  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    keyword:     String(r.fields.keyword     ?? ''),
-    trend_score: Number(r.fields.trend_score ?? 0),
+  return (data.records ?? []).map((r: Record<string, unknown>) => ({
+    keyword:     String(r.keyword     ?? ''),
+    trend_score: Number(r.trend_score ?? 0),
   }))
 }
 
@@ -34,10 +34,10 @@ async function fetchRecentInsights() {
   const data = await atGet(
     `/Nexa_Insights?filterByFormula=${formula}&maxRecords=10&sort[0][field]=created_at&sort[0][direction]=desc`
   )
-  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    insight_text:    String(r.fields.insight_text    ?? ''),
-    action_required: String(r.fields.action_required ?? ''),
-    priority:        String(r.fields.priority        ?? ''),
+  return (data.records ?? []).map((r: Record<string, unknown>) => ({
+    insight_text:    String(r.insight_text    ?? ''),
+    action_required: String(r.action_required ?? ''),
+    priority:        String(r.priority        ?? ''),
   }))
 }
 
@@ -46,9 +46,9 @@ async function fetchMemorySearchGaps() {
   const data = await atGet(
     `/Haya_Memory?filterByFormula=${formula}&maxRecords=20&sort[0][field]=created_at&sort[0][direction]=desc`
   )
-  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    query:    String(r.fields.query    ?? r.fields.value   ?? ''),
-    item_code: String(r.fields.item_code ?? ''),
+  return (data.records ?? []).map((r: Record<string, unknown>) => ({
+    query:    String(r.query    ?? r.value   ?? ''),
+    item_code: String(r.item_code ?? ''),
   }))
 }
 
@@ -56,17 +56,17 @@ async function fetchTopMarginProducts() {
   const fields = ['item_code', 'name', 'category', 'final_price', 'cost_price', 'haya_badge', 'display_order']
   const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&')
   const data = await atGet(`/Products?${qs}&maxRecords=100`)
-  const records = (data.records ?? []) as Array<{ id: string; fields: Record<string, unknown> }>
+  const records = (data.records ?? []) as Array<Record<string, unknown> & { id: string }>
   return records
     .map(r => ({
       id:         r.id,
-      item_code:  String(r.fields.item_code  ?? ''),
-      name:       String(r.fields.name       ?? ''),
-      category:   String(r.fields.category   ?? ''),
-      price:      Number(r.fields.final_price ?? 0),
-      cost:       Number(r.fields.cost_price  ?? 0),
-      haya_badge: String(r.fields.haya_badge  ?? ''),
-      display_order: Number(r.fields.display_order ?? 99),
+      item_code:  String(r.item_code  ?? ''),
+      name:       String(r.name       ?? ''),
+      category:   String(r.category   ?? ''),
+      price:      Number(r.final_price ?? 0),
+      cost:       Number(r.cost_price  ?? 0),
+      haya_badge: String(r.haya_badge  ?? ''),
+      display_order: Number(r.display_order ?? 99),
     }))
     .filter(p => p.price > 0 && p.cost > 0)
     .map(p => ({ ...p, margin_pct: ((p.price - p.cost) / p.price * 100) }))

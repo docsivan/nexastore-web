@@ -17,11 +17,11 @@ function nanoid(): string {
 async function getCRORecords() {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const data  = await atList('Nexa_CRO', { since, limit: 50 })
-  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    page_url:    String(r.fields.page_url    ?? ''),
-    signal_type: String(r.fields.signal_type ?? ''),
-    session_count: Number(r.fields.session_count ?? 0),
-    created_at:  String(r.fields.created_at  ?? ''),
+  return (data.records ?? []).map((r: Record<string, unknown>) => ({
+    page_url:    String(r.page_url    ?? ''),
+    signal_type: String(r.signal_type ?? ''),
+    session_count: Number(r.session_count ?? 0),
+    created_at:  String(r.created_at  ?? ''),
   }))
 }
 

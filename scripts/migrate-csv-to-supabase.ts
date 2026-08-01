@@ -81,6 +81,49 @@ const bool = (v?: string) => {
   return s === 'checked' || s === 'true' || s === '1' || s === 'yes'
 }
 const json = (v?: string) => { try { return JSON.parse(v || '[]') } catch { return [] } }
+
+/**
+ * orders.items in the Airtable export is a human-readable summary, not JSON:
+ *   "DEN-001 x10, DEN-002 x10, DEN-003 x5"
+ * Parse it into real line items, enriching name and price from the products
+ * table so downstream analytics (top-sellers, velocity, CFO) have usable data.
+ * Falls back to JSON.parse for any row that genuinely holds JSON.
+ */
+function parseItemsSummary(
+  raw: string | undefined,
+  index: Map<string, { name: string; final_price: number }>
+): Array<Record<string, unknown>> {
+  const v = (raw ?? '').trim()
+  if (!v) return []
+  if (v.startsWith('[') || v.startsWith('{')) {
+    try { return JSON.parse(v) } catch { /* fall through */ }
+  }
+  const out: Array<Record<string, unknown>> = []
+  for (const part of v.split(',')) {
+    const m = part.trim().match(/^(\S+)\s*[x×]\s*(\d+)$/i)
+    if (!m) continue
+    const item_code = m[1]
+    const quantity = parseInt(m[2], 10)
+    const p = index.get(item_code)
+    out.push({
+      item_code,
+      quantity,
+      name:        p?.name ?? item_code,
+      final_price: p?.final_price ?? 0,
+    })
+  }
+  return out
+}
+
+/** item_code -> { name, final_price } for enriching parsed line items. */
+async function buildProductIndex() {
+  const index = new Map<string, { name: string; final_price: number }>()
+  const { data } = await supabase.from('products').select('item_code,name,final_price')
+  for (const r of data ?? []) {
+    index.set(String(r.item_code), { name: String(r.name ?? ''), final_price: Number(r.final_price ?? 0) })
+  }
+  return index
+}
 /** Airtable exports blank dates as ''; a date/timestamptz column needs null. */
 const date = (v?: string) => str(v)
 
@@ -114,7 +157,8 @@ async function migrateOrders() {
   console.log('\n📦 orders')
   const rows = readCsv('scripts/orders-export.csv')
   dropNote('orders', ['Customers', 'Disclaimers'].filter(c => rows[0] && c in rows[0]))
-  mapNote('orders', 'items (JSON string)', 'items (jsonb)')
+  const productIndex = await buildProductIndex()
+  mapNote('orders', 'items ("CODE xQTY, ..." summary)', 'items (jsonb line items, priced from products)')
   await push('orders', rows.map(r => ({
     order_id:         str(r.order_id) ?? `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     created_at:       date(r.created_at),
@@ -124,7 +168,7 @@ async function migrateOrders() {
     email:            str(r.email),
     address:          str(r.address),
     city:             str(r.city),
-    items:            json(r.items),
+    items:            parseItemsSummary(r.items, productIndex),
     subtotal:         num(r.subtotal, 0),
     delivery_charge:  num(r.delivery_charge, 0),
     total:            num(r.total, 0),

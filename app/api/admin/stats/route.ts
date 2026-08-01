@@ -10,22 +10,22 @@ export async function GET(req: NextRequest) {
   if (!auth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const [orders, lowStock] = await Promise.all([getAllOrders(500), getLowStockProducts(10)])
-    const paid  = orders.filter(o => o.fields.payment_status === 'paid')
+    const paid  = orders.filter(o => o.payment_status === 'paid')
     const today = new Date().toISOString().slice(0, 10)
     return NextResponse.json({
       stats: {
         total_orders:   orders.length,
         paid_orders:    paid.length,
-        pending_orders: orders.filter(o => o.fields.delivery_status === 'processing').length,
-        today_orders:   orders.filter(o => (o.fields.created_at || o.createdTime || '').startsWith(today)).length,
-        total_revenue:  Math.round(paid.reduce((s, o) => s + (o.fields.total || 0), 0) * 1000) / 1000,
+        pending_orders: orders.filter(o => o.delivery_status === 'processing').length,
+        today_orders:   orders.filter(o => (o.created_at || o.createdTime || '').startsWith(today)).length,
+        total_revenue:  Math.round(paid.reduce((s, o) => s + (o.total || 0), 0) * 1000) / 1000,
       },
       low_stock: lowStock.map(p => ({
-        item_code:      p.fields.item_code,
-        name:           p.fields.name,
-        brand:          p.fields.brand,
-        category:       p.fields.category,
-        stock_quantity: p.fields.stock_quantity,
+        item_code:      p.item_code,
+        name:           p.name,
+        brand:          p.brand,
+        category:       p.category,
+        stock_quantity: p.stock_quantity,
       })),
     })
   } catch (e) {

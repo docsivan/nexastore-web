@@ -9,21 +9,17 @@ function checkAuth(req: NextRequest) {
 }
 
 type ProductRec = {
-  fields: {
-    item_code?:    string
-    name?:         string
-    category?:     string
-    final_price?:  number
-    cost_price?:   number
-  }
+  item_code?:    string
+  name?:         string
+  category?:     string
+  final_price?:  number
+  cost_price?:   number
 }
 
 type OrderRec = {
-  fields: {
-    created_at?: string
-    items?:      string
-    payment_status?: string
-  }
+  created_at?: string
+  items?:      string
+  payment_status?: string
 }
 
 type ItemLine = {
@@ -63,13 +59,13 @@ export async function GET(req: NextRequest) {
   // Build lookup maps from Products
   const productMap: Record<string, { name: string; category: string; cost: number; price: number }> = {}
   for (const p of products) {
-    const code = p.fields.item_code
+    const code = p.item_code
     if (!code) continue
     productMap[code] = {
-      name:     p.fields.name ?? code,
-      category: p.fields.category ?? 'Other',
-      cost:     p.fields.cost_price ?? 0,
-      price:    p.fields.final_price ?? 0,
+      name:     p.name ?? code,
+      category: p.category ?? 'Other',
+      cost:     p.cost_price ?? 0,
+      price:    p.final_price ?? 0,
     }
   }
 
@@ -77,7 +73,7 @@ export async function GET(req: NextRequest) {
   const productSales: Record<string, { name: string; category: string; revenue: number; cost: number; units: number }> = {}
 
   for (const order of orders) {
-    for (const item of parseItems(order.fields.items ?? '[]')) {
+    for (const item of parseItems(order.items ?? '[]')) {
       const code = item.item_code ?? ''
       if (!code) continue
       const prod     = productMap[code]

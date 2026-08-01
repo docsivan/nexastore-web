@@ -23,9 +23,9 @@ async function fetchCustomer(id: string): Promise<{ name: string; phone: string;
   const rec = await atGetOne('Customers', id)
   if (!rec) return null
   return {
-    name:   String(rec.fields.customer_name ?? ''),
-    phone:  String(rec.fields.phone ?? ''),
-    clinic: String(rec.fields.clinic_name ?? ''),
+    name:   String(rec.customer_name ?? ''),
+    phone:  String(rec.phone ?? ''),
+    clinic: String(rec.clinic_name ?? ''),
   }
 }
 
@@ -34,9 +34,9 @@ async function fetchProduct(itemCode: string): Promise<{ name: string; stock: nu
   const rec = d.records?.[0]
   if (!rec) return null
   return {
-    name:     String(rec.fields.name ?? ''),
-    stock:    Number(rec.fields.stock_quantity ?? 0),
-    brand:    String(rec.fields.brand ?? ''),
+    name:     String(rec.name ?? ''),
+    stock:    Number(rec.stock_quantity ?? 0),
+    brand:    String(rec.brand ?? ''),
     recordId: rec.id,
   }
 }
@@ -44,7 +44,7 @@ async function fetchProduct(itemCode: string): Promise<{ name: string; stock: nu
 async function getLastOrderDaysAgo(phone: string): Promise<number> {
   try {
     const d    = await atList('Orders', { limit: 1, match: { phone } })
-    const date = d.records?.[0]?.fields?.created_at as string | undefined
+    const date = d.records?.[0]?.created_at as string | undefined
     if (!date) return 30
     return Math.max(1, Math.round((Date.now() - new Date(date).getTime()) / 86400000))
   } catch {
@@ -188,9 +188,9 @@ export async function handleSearchGap(insight: HayaInsight): Promise<void> {
   let hasMatch = false
   try {
     const d = await atList('Products', { limit: 500 })
-    hasMatch = (d.records ?? []).some((r: { fields: Record<string, unknown> }) => {
-      const name = String(r.fields.name ?? '').toLowerCase()
-      const cat  = String(r.fields.category ?? '').toLowerCase()
+    hasMatch = (d.records ?? []).some((r: Record<string, unknown>) => {
+      const name = String(r.name ?? '').toLowerCase()
+      const cat  = String(r.category ?? '').toLowerCase()
       return name.includes(query) || cat.includes(query)
     })
   } catch {}

@@ -18,16 +18,14 @@ function nanoid(): string {
 
 type ProductRec = {
   id: string
-  fields: {
-    item_code?:      string
-    name?:           string
-    brand?:          string
-    category?:       string
-    stock_quantity?: number
-    cost_price?:     number
-    final_price?:    number
-    haya_badge?:     string
-  }
+  item_code?:      string
+  name?:           string
+  brand?:          string
+  category?:       string
+  stock_quantity?: number
+  cost_price?:     number
+  final_price?:    number
+  haya_badge?:     string
 }
 
 type ItemLine = { item_code?: string; quantity?: number }
@@ -42,9 +40,9 @@ async function fetchRecentOrderItems(): Promise<Record<string, number>> {
   const since   = new Date(Date.now() - 30 * 86400000).toISOString()
   const records = await getPaidOrdersSince(since, 500).catch(() => [])
   const unitsSold: Record<string, number> = {}
-  for (const r of records as unknown as Array<{ fields: { items?: string } }>) {
+  for (const r of records as unknown as Array<{ items?: string }>) {
     try {
-      const items: ItemLine[] = JSON.parse(r.fields.items ?? '[]')
+      const items: ItemLine[] = JSON.parse(r.items ?? '[]')
       for (const item of items) {
         const code = item.item_code ?? ''
         if (code) unitsSold[code] = (unitsSold[code] ?? 0) + (item.quantity ?? 1)
@@ -112,8 +110,8 @@ export async function GET(req: NextRequest) {
     const lowStockIds: string[] = []
 
     for (const p of products) {
-      const code     = p.fields.item_code ?? ''
-      const stock    = p.fields.stock_quantity ?? 0
+      const code     = p.item_code ?? ''
+      const stock    = p.stock_quantity ?? 0
       const sold     = unitsSold[code] ?? 0
       const velocity = sold / 30
       const daysOut  = velocity > 0 ? stock / velocity : null
@@ -132,11 +130,11 @@ export async function GET(req: NextRequest) {
         flagged.push({
           id:              p.id,
           item_code:       code,
-          name:            p.fields.name  ?? code,
-          brand:           p.fields.brand ?? '',
-          category:        p.fields.category ?? '',
+          name:            p.name  ?? code,
+          brand:           p.brand ?? '',
+          category:        p.category ?? '',
           stock,
-          cost:            p.fields.cost_price ?? 0,
+          cost:            p.cost_price ?? 0,
           units_sold_30d:  sold,
           daily_velocity:  parseFloat(velocity.toFixed(4)),
           days_to_stockout: daysOut !== null ? Math.round(daysOut) : null,

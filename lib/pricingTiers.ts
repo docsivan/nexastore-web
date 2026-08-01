@@ -36,20 +36,20 @@ interface TierFields {
  * usable, so callers can fall back to DEFAULT_TIERS.
  */
 export function mapTierRecords(
-  records: Array<{ fields: TierFields }>
+  records: Array<TierFields>
 ): PricingTier[] | null {
   if (!records.length) return null
   const sorted = [...records].sort(
-    (a, b) => (a.fields.min_quantity ?? 0) - (b.fields.min_quantity ?? 0)
+    (a, b) => (a.min_quantity ?? 0) - (b.min_quantity ?? 0)
   )
   return sorted.map((r, i) => {
-    const nextMin = sorted[i + 1]?.fields.min_quantity
+    const nextMin = sorted[i + 1]?.min_quantity
     return {
-      name:     r.fields.tier_name        ?? 'Standard',
-      color:    r.fields.color_hex        ?? '#6B7280',
-      min:      r.fields.min_quantity     ?? 1,
+      name:     r.tier_name        ?? 'Standard',
+      color:    r.color_hex        ?? '#6B7280',
+      min:      r.min_quantity     ?? 1,
       max:      nextMin ? nextMin - 1 : null,
-      discount: r.fields.discount_percent ?? 0,
+      discount: r.discount_percent ?? 0,
     }
   })
 }

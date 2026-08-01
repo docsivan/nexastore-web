@@ -18,24 +18,20 @@ function nanoid(): string {
 }
 
 type OrderRec = {
-  fields: {
-    created_at?:     string
-    total?:          number
-    payment_status?: string
-    items?:          string
-    customer_name?:  string
-  }
+  created_at?:     string
+  total?:          number
+  payment_status?: string
+  items?:          string
+  customer_name?:  string
 }
 
 type ProductRec = {
-  fields: {
-    item_code?:      string
-    name?:           string
-    category?:       string
-    stock_quantity?: number
-    final_price?:    number
-    cost_price?:     number
-  }
+  item_code?:      string
+  name?:           string
+  category?:       string
+  stock_quantity?: number
+  final_price?:    number
+  cost_price?:     number
 }
 
 type ItemLine = {
@@ -85,26 +81,26 @@ export async function GET(req: NextRequest) {
     ])
 
     // Filter orders60 to get 30–60 day window (not included in orders30)
-    const orders30Set = new Set(orders30.map(o => o.fields.created_at ?? ''))
-    const orders30_60 = orders60.filter(o => !orders30Set.has(o.fields.created_at ?? ''))
+    const orders30Set = new Set(orders30.map(o => o.created_at ?? ''))
+    const orders30_60 = orders60.filter(o => !orders30Set.has(o.created_at ?? ''))
 
     // Build product cost map
     const productMap: Record<string, { name: string; category: string; cost: number; price: number; stock: number }> = {}
     for (const p of products) {
-      const code = p.fields.item_code
+      const code = p.item_code
       if (!code) continue
       productMap[code] = {
-        name:     p.fields.name ?? code,
-        category: p.fields.category ?? 'Other',
-        cost:     p.fields.cost_price ?? 0,
-        price:    p.fields.final_price ?? 0,
-        stock:    p.fields.stock_quantity ?? 0,
+        name:     p.name ?? code,
+        category: p.category ?? 'Other',
+        cost:     p.cost_price ?? 0,
+        price:    p.final_price ?? 0,
+        stock:    p.stock_quantity ?? 0,
       }
     }
 
     // 30-day financials
-    const revenue30  = orders30.reduce((s, o) => s + (o.fields.total ?? 0), 0)
-    const revenue60  = orders30_60.reduce((s, o) => s + (o.fields.total ?? 0), 0)
+    const revenue30  = orders30.reduce((s, o) => s + (o.total ?? 0), 0)
+    const revenue60  = orders30_60.reduce((s, o) => s + (o.total ?? 0), 0)
     const revenueGrowth = revenue60 > 0
       ? parseFloat(((revenue30 - revenue60) / revenue60 * 100).toFixed(1))
       : 0
@@ -115,7 +111,7 @@ export async function GET(req: NextRequest) {
     const catCost:    Record<string, number> = {}
 
     for (const order of orders30) {
-      for (const item of parseItems(order.fields.items ?? '[]')) {
+      for (const item of parseItems(order.items ?? '[]')) {
         const code  = item.item_code ?? ''
         const prod  = productMap[code]
         const price = item.final_price ?? prod?.price ?? 0
@@ -145,9 +141,9 @@ export async function GET(req: NextRequest) {
 
     // Low stock alerts
     const lowStock = products
-      .filter(p => (p.fields.stock_quantity ?? 0) < 10 && p.fields.item_code)
+      .filter(p => (p.stock_quantity ?? 0) < 10 && p.item_code)
       .slice(0, 10)
-      .map(p => `${p.fields.name} (${p.fields.stock_quantity} units)`)
+      .map(p => `${p.name} (${p.stock_quantity} units)`)
 
     // Build CFO context for Sonnet
     const context = {
@@ -187,14 +183,14 @@ Data: ${JSON.stringify(context, null, 2)}`
     try {
       const deadStockProducts = products
         .filter(p => {
-          const code  = p.fields.item_code ?? ''
-          const stock = p.fields.stock_quantity ?? 0
-          const cost  = p.fields.cost_price ?? 0
+          const code  = p.item_code ?? ''
+          const stock = p.stock_quantity ?? 0
+          const cost  = p.cost_price ?? 0
           const sold  = (() => {
             let units = 0
             for (const order of orders30) {
               try {
-                const items: Array<{ item_code?: string; quantity?: number }> = JSON.parse(order.fields.items ?? '[]')
+                const items: Array<{ item_code?: string; quantity?: number }> = JSON.parse(order.items ?? '[]')
                 for (const item of items) {
                   if (item.item_code === code) units += item.quantity ?? 1
                 }
@@ -206,12 +202,12 @@ Data: ${JSON.stringify(context, null, 2)}`
         })
         .slice(0, 20)
         .map(p => ({
-          item_code:       p.fields.item_code,
-          name:            p.fields.name,
-          category:        p.fields.category,
-          stock:           p.fields.stock_quantity ?? 0,
-          cost_price:      p.fields.cost_price ?? 0,
-          capital_tied_up: parseFloat(((p.fields.stock_quantity ?? 0) * (p.fields.cost_price ?? 0)).toFixed(3)),
+          item_code:       p.item_code,
+          name:            p.name,
+          category:        p.category,
+          stock:           p.stock_quantity ?? 0,
+          cost_price:      p.cost_price ?? 0,
+          capital_tied_up: parseFloat(((p.stock_quantity ?? 0) * (p.cost_price ?? 0)).toFixed(3)),
           orders_30d:      0,
         }))
 

@@ -12,15 +12,15 @@ async function fetchInsight(id: string): Promise<HayaInsight | null> {
   if (!r) return null
   return {
     id:              r.id,
-    insight_id:      String(r.fields.insight_id      ?? ''),
-    package:         String(r.fields.package         ?? ''),
-    insight_type:    String(r.fields.insight_type    ?? r.fields.package ?? ''),
-    insight:         String(r.fields.insight_text    ?? r.fields.insight ?? ''),
-    priority:        Number(r.fields.priority        ?? 0),
-    status:          String(r.fields.status          ?? ''),
-    action_required: String(r.fields.action_required ?? ''),
-    item_code:       r.fields.item_code   ? String(r.fields.item_code)   : undefined,
-    customer_id:     r.fields.customer_id ? String(r.fields.customer_id) : undefined,
+    insight_id:      String(r.insight_id      ?? ''),
+    package:         String(r.package         ?? ''),
+    insight_type:    String(r.insight_type    ?? r.package ?? ''),
+    insight:         String(r.insight_text    ?? r.insight ?? ''),
+    priority:        Number(r.priority        ?? 0),
+    status:          String(r.status          ?? ''),
+    action_required: String(r.action_required ?? ''),
+    item_code:       r.item_code   ? String(r.item_code)   : undefined,
+    customer_id:     r.customer_id ? String(r.customer_id) : undefined,
   }
 }
 

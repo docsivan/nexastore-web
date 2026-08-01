@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
     // Validate item was in the order
-    if (!orderContainsItem(order.fields.items ?? '[]', item_code)) {
+    if (!orderContainsItem(order.items ?? '[]', item_code)) {
       return NextResponse.json({ error: 'Item not found in this order' }, { status: 400 })
     }
 

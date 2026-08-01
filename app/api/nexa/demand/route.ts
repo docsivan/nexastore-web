@@ -20,7 +20,7 @@ type ItemLine = { item_code?: string; quantity?: number; category?: string }
 async function fetchNinetyDayOrders() {
   const since = new Date(Date.now() - 90 * 86400000).toISOString()
   try {
-    return (await getPaidOrdersSince(since, 500)) as unknown as Array<{ fields: { items?: string; created_at?: string } }>
+    return (await getPaidOrdersSince(since, 500)) as unknown as Array<{ items?: string; created_at?: string }>
   } catch { return [] }
 }
 
@@ -28,7 +28,7 @@ async function fetchProductCategories(): Promise<Record<string, string>> {
   try {
     const map: Record<string, string> = {}
     for (const r of await getAllProducts()) {
-      if (r.fields.item_code) map[r.fields.item_code] = r.fields.category ?? 'Other'
+      if (r.item_code) map[r.item_code] = r.category ?? 'Other'
     }
     return map
   } catch { return {} }
@@ -36,10 +36,10 @@ async function fetchProductCategories(): Promise<Record<string, string>> {
 
 async function fetchTrends() {
   const data = await atList('Haya_Trends', { limit: 20, orderBy: 'trend_score' })
-  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    keyword:     String(r.fields.keyword     ?? ''),
-    trend_score: Number(r.fields.trend_score ?? 0),
-    created_at:  String(r.fields.created_at  ?? ''),
+  return (data.records ?? []).map((r: Record<string, unknown>) => ({
+    keyword:     String(r.keyword     ?? ''),
+    trend_score: Number(r.trend_score ?? 0),
+    created_at:  String(r.created_at  ?? ''),
   }))
 }
 
@@ -48,14 +48,14 @@ async function fetchPatternInsights() {
   // need a separate helper and this list is small.
   const data = await atList('Nexa_Insights', { limit: 100 })
   return (data.records ?? [])
-    .filter((r: { fields: Record<string, unknown> }) =>
-      ['demand_forecast', 'inventory_alert'].includes(String(r.fields.insight_type ?? ''))
+    .filter((r: Record<string, unknown>) =>
+      ['demand_forecast', 'inventory_alert'].includes(String(r.insight_type ?? ''))
     )
     .slice(0, 10)
-    .map((r: { fields: Record<string, unknown> }) => ({
-      insight_text: String(r.fields.insight_text ?? ''),
-      insight_type: String(r.fields.insight_type ?? ''),
-      created_at:   String(r.fields.created_at   ?? ''),
+    .map((r: Record<string, unknown>) => ({
+      insight_text: String(r.insight_text ?? ''),
+      insight_type: String(r.insight_type ?? ''),
+      created_at:   String(r.created_at   ?? ''),
     }))
 }
 
@@ -104,10 +104,10 @@ export async function GET(req: NextRequest) {
     // Group units sold by category by week
     const catWeekly: Record<string, Record<number, number>> = {}
     for (const order of orders) {
-      const ts = order.fields.created_at ? new Date(order.fields.created_at) : new Date()
+      const ts = order.created_at ? new Date(order.created_at) : new Date()
       const wk = weekNumber(ts)
       try {
-        const items: ItemLine[] = JSON.parse(order.fields.items ?? '[]')
+        const items: ItemLine[] = JSON.parse(order.items ?? '[]')
         for (const item of items) {
           const code = item.item_code ?? ''
           const cat  = catMap[code] ?? item.category ?? 'Other'

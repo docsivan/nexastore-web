@@ -1,0 +1,11 @@
+﻿customer_name,clinic_name,phone,email,address,city,last_order_date,total_orders,total_spent,preferred_channel,notes,orders,customer_id,Disclaimers,password_hash,addresses
+Dr. Ahmed Al Rashidi,Al Rashidi Medical Centre,+96891234001,ahmed@alrashidi-clinic.com,"Building 23, Street 5",Capital City,5/22/2026,2,62,WhatsApp,,,,,,
+Dr. Sarah Mitchell,Mitchell Family Clinic,+96891234002,sarah@mitchellclinic.com,"Building 20, Street 13",North District,5/19/2026,2,147,WhatsApp,,,,,,
+Dr. Omar Farouq,Farouq Dental Studio,+96891234003,omar@farouqdental.com,"Building 16, Street 20",West Zone,5/21/2026,2,166,Email,,,,,,
+Dr. Priya Nair,Nair Specialist Centre,+96891234004,priya@naircentre.com,"Building 74, Street 18",East District,5/21/2026,2,95,Phone,,,,,,
+Mr. James Okonkwo,Okonkwo Health Supplies,+96891234005,james@okonkwosupplies.com,"Building 37, Street 17",South Zone,5/20/2026,2,573,Phone,,,,,,
+Dr. Fatima Al Zaabi,Al Zaabi Polyclinic,+96891234006,fatima@alzaabi-poly.com,"Building 57, Street 4",Capital City,5/19/2026,2,111,WhatsApp,,,,,,
+Dr. Chen Wei,Wei Orthopaedic Clinic,+96891234007,chen@weiclinic.com,"Building 90, Street 13",North District,5/21/2026,2,181,Email,,,,,,
+Dr. Maria Santos,Santos Paediatric Centre,+96891234008,maria@santospaediatric.com,"Building 34, Street 18",West Zone,5/19/2026,2,58,Email,,,,,,
+Mr. Khalid Al Balushi,Al Balushi Medical Trading,+96891234009,khalid@albalushi-trading.com,"Building 54, Street 16",East District,5/21/2026,2,431,WhatsApp,,,,,,
+Dr. Aisha Qasim,Qasim Women Health Centre,+96891234010,aisha@qasimwomens.com,"Building 22, Street 17",South Zone,5/22/2026,2,53,WhatsApp,,,,,,

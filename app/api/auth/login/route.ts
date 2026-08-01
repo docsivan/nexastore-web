@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     if (!phone) return NextResponse.json({ error: 'Phone required' }, { status: 400 })
     const customer = await getCustomerByPhone(phone.trim())
     if (!customer) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-    const f = customer.fields
+    const f = customer
     return NextResponse.json({
       success: true,
       customer: {

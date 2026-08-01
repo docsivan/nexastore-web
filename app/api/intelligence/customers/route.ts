@@ -9,14 +9,12 @@ function checkAuth(req: NextRequest) {
 }
 
 type OrderRec = {
-  fields: {
-    created_at?:     string
-    total?:          number
-    customer_name?:  string
-    customer_phone?: string
-    customer_id?:    string
-    payment_status?: string
-  }
+  created_at?:     string
+  total?:          number
+  customer_name?:  string
+  customer_phone?: string
+  customer_id?:    string
+  payment_status?: string
 }
 
 async function fetchPaidOrdersSince(since: string): Promise<OrderRec[]> {
@@ -48,12 +46,12 @@ export async function GET(req: NextRequest) {
   }> = {}
 
   for (const order of ninetyOrders) {
-    const key  = order.fields.customer_phone ?? order.fields.customer_id ?? order.fields.customer_name ?? 'unknown'
-    const name = order.fields.customer_name ?? key
-    const ts   = order.fields.created_at ?? ''
+    const key  = order.customer_phone ?? order.customer_id ?? order.customer_name ?? 'unknown'
+    const name = order.customer_name ?? key
+    const ts   = order.created_at ?? ''
     if (!customerMap[key]) customerMap[key] = { name, orders: 0, revenue: 0, lastOrder: ts }
     customerMap[key].orders  += 1
-    customerMap[key].revenue += order.fields.total ?? 0
+    customerMap[key].revenue += order.total ?? 0
     if (ts > customerMap[key].lastOrder) customerMap[key].lastOrder = ts
   }
 
@@ -65,7 +63,7 @@ export async function GET(req: NextRequest) {
     : 0
 
   // Average order value this month
-  const monthTotal  = monthOrders.reduce((s, o) => s + (o.fields.total ?? 0), 0)
+  const monthTotal  = monthOrders.reduce((s, o) => s + (o.total ?? 0), 0)
   const avgOrderValue = monthOrders.length > 0
     ? parseFloat((monthTotal / monthOrders.length).toFixed(3))
     : 0
@@ -73,23 +71,23 @@ export async function GET(req: NextRequest) {
   // New vs returning this month
   const monthKeys = new Set(
     monthOrders.map(o =>
-      o.fields.customer_phone ?? o.fields.customer_id ?? o.fields.customer_name ?? 'unknown'
+      o.customer_phone ?? o.customer_id ?? o.customer_name ?? 'unknown'
     )
   )
 
   // Customers with orders in 30–60 day window (churning) but not in last 30 days
   const last30Keys = new Set(
     ninetyOrders
-      .filter(o => (o.fields.created_at ?? '') >= thirtyAgo)
-      .map(o => o.fields.customer_phone ?? o.fields.customer_id ?? o.fields.customer_name ?? 'unknown')
+      .filter(o => (o.created_at ?? '') >= thirtyAgo)
+      .map(o => o.customer_phone ?? o.customer_id ?? o.customer_name ?? 'unknown')
   )
   const prev30Keys = new Set(
     ninetyOrders
       .filter(o => {
-        const ts = o.fields.created_at ?? ''
+        const ts = o.created_at ?? ''
         return ts >= sixtyAgo && ts < thirtyAgo
       })
-      .map(o => o.fields.customer_phone ?? o.fields.customer_id ?? o.fields.customer_name ?? 'unknown')
+      .map(o => o.customer_phone ?? o.customer_id ?? o.customer_name ?? 'unknown')
   )
   const atRiskCount = Array.from(prev30Keys).filter(k => !last30Keys.has(k)).length
 

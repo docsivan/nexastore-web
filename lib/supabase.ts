@@ -2,19 +2,9 @@
  * lib/supabase.ts
  * Zevio data layer — Supabase replacement for lib/airtable.ts.
  *
- * ─── IMPORTANT: TWO RETURN CONVENTIONS LIVE IN THIS FILE ───────────────────
- *
- * 1. LEGACY-COMPATIBLE LAYER (products / orders / customers / pricing_tiers)
- *    Returns Airtable-shaped records: `{ id, fields: {...}, createdTime }`.
- *    This exists so the ~332 existing `.fields.x` call sites across the app
- *    keep working unchanged after the Airtable → Supabase cutover.
- *    `id` is the Supabase row UUID (it replaces the old `rec…` Airtable ID),
- *    so `updateOrder(order.id, …)` and `updateCustomer(customer.id, …)`
- *    still work — they filter on the `id` column.
- *
- * 2. ZEVIO-NATIVE LAYER (ai_* tables)
- *    Returns plain flat rows. These tables have no legacy consumers, so there
- *    is nothing to stay compatible with.
+ * All reads return FLAT rows — columns at the top level, plus a string `id`
+ * and `createdTime`. The old Airtable `{ id, fields }` envelope was retired in
+ * Z-005; there is now one convention across the whole file.
  *
  * Field-name differences handled by the mappers below:
  *   name_ar/description_ar/category_ar  ->  nameAr/descriptionAr/categoryAr
@@ -50,13 +40,13 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
 // ── SHAPE MAPPERS ─────────────────────────────────────────
 
-/** Wraps a flat Supabase row into the Airtable `{ id, fields }` shape. */
+/** Normalises a Supabase row: keeps columns flat, adds a string id + createdTime. */
 function toRecord<T>(row: Record<string, any>, fields: T): AirtableRecord<T> {
   return {
+    ...(fields as Record<string, unknown>),
     id: String(row.id),
-    fields,
     createdTime: row.created_at ?? undefined,
-  }
+  } as AirtableRecord<T>
 }
 
 function productToRecord(row: Record<string, any>): AirtableProduct {
@@ -310,17 +300,11 @@ export async function getPaidOrdersSince(
   return (data ?? []).map(orderToRecord)
 }
 
-/**
- * Wraps flat rows in the `{ id, fields }` envelope the analytics routes expect,
- * so readAiTable() results drop straight into existing `.fields.x` code.
- */
+/** Normalises flat rows: stringifies id. Columns stay at the top level. */
 export function asRecords<T = Record<string, any>>(
   rows: Record<string, any>[]
-): Array<{ id: string; fields: T }> {
-  return rows.map((row) => {
-    const { id, ...rest } = row
-    return { id: String(id), fields: rest as T }
-  })
+): Array<T & { id: string }> {
+  return rows.map((row) => ({ ...row, id: String(row.id) }) as T & { id: string })
 }
 
 /** Generic reader for the ai_* analytics tables. */
@@ -361,11 +345,11 @@ export async function readAiTable(
  * Runs sequentially so a partial failure is reported rather than silent.
  */
 export async function updateProductsBatch(
-  batch: Array<{ id: string; fields: Record<string, unknown> }>
+  batch: Array<Record<string, unknown> & { id: string }>
 ): Promise<{ updated: number; failed: number }> {
   let updated = 0
   let failed = 0
-  for (const { id, fields } of batch) {
+  for (const { id, ...fields } of batch) {
     const { error } = await supabase
       .from('products')
       .update({ ...productFieldsToColumns(fields), updated_at: new Date().toISOString() })

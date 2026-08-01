@@ -9,7 +9,7 @@ async function fetchRecentOrders(item_code: string) {
   const orders = await getOrdersSince(sevenDaysAgo, 100)
   return orders.filter((o) => {
     try {
-      const items = JSON.parse(o.fields.items || '[]')
+      const items = JSON.parse(o.items || '[]')
       return Array.isArray(items) && items.some((i) => i?.item_code === item_code)
     } catch {
       return false
@@ -28,12 +28,12 @@ export async function GET(
     const today = new Date().toISOString().slice(0, 10)
     const ordersThisWeek = orders.length
     const ordersToday = orders.filter((o) =>
-      (o.fields.created_at ?? '').startsWith(today)
+      (o.created_at ?? '').startsWith(today)
     ).length
 
     // Get live stock
     const product = await getProductByItemCode(item_code)
-    const stock = product?.fields.stock_quantity ?? 0
+    const stock = product?.stock_quantity ?? 0
 
     // Generate copy
     let stockCopy = ''

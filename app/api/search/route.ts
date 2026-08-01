@@ -32,11 +32,11 @@ export async function GET(req: NextRequest) {
 
     // Build condensed catalogue for Gemini
     const catalogue: ProductSummary[] = airtableProducts.map((p) => ({
-      item_code: p.fields.item_code,
-      name:      p.fields.name,
-      category:  p.fields.category,
-      brand:     p.fields.brand,
-      pack_size: p.fields.pack_size,
+      item_code: p.item_code,
+      name:      p.name,
+      category:  p.category,
+      brand:     p.brand,
+      pack_size: p.pack_size,
     }))
 
     // Ask Gemini to find matching item_codes
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Map matched codes to products
-    const productMap = new Map(airtableProducts.map((p) => [p.fields.item_code, p]))
+    const productMap = new Map(airtableProducts.map((p) => [p.item_code, p]))
     const matched = matchedCodes
       .map((code) => productMap.get(code))
       .filter(Boolean) as typeof airtableProducts
@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
       const airtableProducts = await getCachedProducts()
       const ql = q.toLowerCase()
       const fallback = airtableProducts.filter((p) =>
-        p.fields.name?.toLowerCase().includes(ql) ||
-        p.fields.brand?.toLowerCase().includes(ql) ||
-        p.fields.category?.toLowerCase().includes(ql)
+        p.name?.toLowerCase().includes(ql) ||
+        p.brand?.toLowerCase().includes(ql) ||
+        p.category?.toLowerCase().includes(ql)
       )
       return NextResponse.json({
         data:  adaptAirtableProducts(fallback).slice(0, 8),

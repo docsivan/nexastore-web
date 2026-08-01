@@ -9,22 +9,18 @@ function checkAuth(req: NextRequest) {
 }
 
 type ProductRec = {
-  fields: {
-    item_code?:       string
-    name?:            string
-    category?:        string
-    stock_quantity?:  number
-    final_price?:     number
-    cost_price?:      number
-  }
+  item_code?:       string
+  name?:            string
+  category?:        string
+  stock_quantity?:  number
+  final_price?:     number
+  cost_price?:      number
 }
 
 type OrderRec = {
-  fields: {
-    created_at?: string
-    items?:      string
-    payment_status?: string
-  }
+  created_at?: string
+  items?:      string
+  payment_status?: string
 }
 
 type ItemLine = {
@@ -67,7 +63,7 @@ export async function GET(req: NextRequest) {
   // Count units sold per product in last 30 days
   const unitsSold: Record<string, number> = {}
   for (const order of orders) {
-    for (const item of parseItems(order.fields.items ?? '[]')) {
+    for (const item of parseItems(order.items ?? '[]')) {
       const code = item.item_code ?? ''
       if (code) unitsSold[code] = (unitsSold[code] ?? 0) + (item.quantity ?? 1)
     }
@@ -88,19 +84,19 @@ export async function GET(req: NextRequest) {
   }> = []
 
   for (const p of products) {
-    const code  = p.fields.item_code ?? ''
+    const code  = p.item_code ?? ''
     if (!code) continue
-    const stock = p.fields.stock_quantity ?? 0
+    const stock = p.stock_quantity ?? 0
     const sold  = unitsSold[code] ?? 0
     const velocity    = parseFloat((sold / 30).toFixed(4))
     const daysToOut   = velocity > 0 ? Math.round(stock / velocity) : null
-    const stockValue  = parseFloat((stock * (p.fields.cost_price ?? p.fields.final_price ?? 0)).toFixed(3))
+    const stockValue  = parseFloat((stock * (p.cost_price ?? p.final_price ?? 0)).toFixed(3))
     const status      = trafficLight(stock)
 
     const entry = {
       item_code:        code,
-      name:             p.fields.name ?? code,
-      category:         p.fields.category ?? 'Other',
+      name:             p.name ?? code,
+      category:         p.category ?? 'Other',
       stock,
       sold_30d:         sold,
       daily_velocity:   velocity,

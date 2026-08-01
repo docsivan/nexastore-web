@@ -1,0 +1,6 @@
+﻿email,phone,source,signed_up_at,lang,status
+clinic1@example.com,+96891240001,homepage,5/9/2026,en,active
+dental2@example.com,+96891240002,product_page,5/12/2026,en,active
+supplier3@example.com,+96891240003,guides,5/16/2026,en,active
+hospital4@example.com,+96891240004,homepage,5/19/2026,en,active
+clinic5@example.com,+96891240005,referral,5/22/2026,en,active

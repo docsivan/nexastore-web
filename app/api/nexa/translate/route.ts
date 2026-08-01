@@ -31,16 +31,16 @@ async function getUntranslatedProducts(): Promise<Product[]> {
   // Only rows that already carry an Arabic title count as translated
   const translatedCodes = new Set(
     (seoData.records ?? [])
-      .filter((r: { fields: Record<string, unknown> }) => Boolean(r.fields.meta_title_ar))
-      .map((r: { fields: Record<string, unknown> }) => String(r.fields.item_code ?? ''))
+      .filter((r: Record<string, unknown>) => Boolean(r.meta_title_ar))
+      .map((r: Record<string, unknown>) => String(r.item_code ?? ''))
   )
 
-  const all: Product[] = (productsData.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
+  const all: Product[] = (productsData.records ?? []).map((r: Record<string, unknown> & { id: string }) => ({
     id:          r.id,
-    item_code:   String(r.fields.item_code   ?? ''),
-    name:        String(r.fields.name        ?? ''),
-    description: String(r.fields.description ?? ''),
-    category:    String(r.fields.category    ?? ''),
+    item_code:   String(r.item_code   ?? ''),
+    name:        String(r.name        ?? ''),
+    description: String(r.description ?? ''),
+    category:    String(r.category    ?? ''),
   })).filter((p: Product) => p.item_code && !translatedCodes.has(p.item_code))
 
   return all.slice(0, BATCH_SIZE)

@@ -43,8 +43,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return {
       // Brand suffix comes from the root layout's title template.
-      title:       record.fields.name,
-      description: `${record.fields.brand} · ${record.fields.pack_size} · \${record.fields.final_price.toFixed(2)}`,
+      title:       record.name,
+      description: `${record.brand} · ${record.pack_size} · \${record.final_price.toFixed(2)}`,
     }
   } catch {
     return { title: 'Product' }
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductDetailPage({ params }: Props) {
   try {
     const record = await getProductByItemCode(params.id)
-    if (!record || !record.fields.is_active) notFound()
+    if (!record || !record.is_active) notFound()
 
     const product = adaptAirtableProduct(record)
     const categoryLabel = product.category

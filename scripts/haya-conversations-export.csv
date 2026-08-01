@@ -1,0 +1,15 @@
+﻿session_id,customer_id,customer_name,clinic_name,page_url,transcript,message_count,intent_summary,outcome,language,created_at,analysed
+SESS-001,CUST-001,Dr. Ahmed Al Rashidi,Al Rashidi Medical Centre,/products,"User: Do you have nitrile gloves in bulk?
+Nexa AI: Yes, we carry nitrile gloves in sizes Small, Medium, and Large. Bulk pricing is available for orders of 10 boxes or more with 5% discount. Would you like me to add these to your cart?
+User: Yes please add 20 boxes of large
+Nexa AI: I have added 20 boxes of Nitrile Gloves Large to your cart. Your bulk discount of 5% has been applied.",5,Bulk purchase intent — nitrile gloves,converted,en,5/22/2026,
+SESS-002,CUST-002,Dr. Sarah Mitchell,Mitchell Family Clinic,/products/den-022,"User: Are these cartridges compatible with standard dental syringes?
+Nexa AI: Yes, these 1.8ml cartridges are compatible with all standard aspirating dental syringes including Septodont, Dentsply, and most universal brands. Each box contains 50 cartridges.
+User: What is the expiry date?
+Nexa AI: Current stock has a minimum 18 month expiry from today.",4,Product compatibility query — dental cartridges,converted,en,5/21/2026,
+SESS-003,CUST-003,Dr. Omar Farouq,Farouq Dental Studio,/products,"User: What infection control products do you recommend for a dental clinic?
+Nexa AI: For a dental clinic, I recommend our core infection control bundle: surface disinfectant wipes, enzymatic cleaner for instruments, sterilization pouches, and chemical indicators. Would you like me to show you the most popular products for dental infection control?",3,Product recommendation — dental infection control,browsed,en,5/20/2026,
+SESS-004,CUST-004,Dr. Priya Nair,Nair Specialist Centre,/products/ppe-002,"User: Is the N95 in stock?
+Nexa AI: Yes, N95 FFP2 respirators are currently in stock with 450 units available. Price is 8.500 OMR per box of 20. Would you like to add to cart?",2,Stock availability query,converted,en,5/23/2026,
+SESS-005,CUST-005,Mr. James Okonkwo,Okonkwo Health Supplies,/products,"User: We need a quote for 500 boxes of surgical masks
+Nexa AI: For 500 boxes of Surgical Face Masks Type IIR, your distributor rate applies with 20% discount. Total would be 1,120 OMR. I can arrange a formal quotation — shall I connect you with our sales team via WhatsApp?",3,Large volume quote request,converted,en,5/22/2026,

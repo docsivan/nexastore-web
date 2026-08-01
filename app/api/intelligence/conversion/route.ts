@@ -9,28 +9,22 @@ function checkAuth(req: NextRequest) {
 }
 
 type OrderRec = {
-  fields: {
-    created_at?:     string
-    total?:          number
-    payment_status?: string
-  }
+  created_at?:     string
+  total?:          number
+  payment_status?: string
 }
 
 type HayaLogRec = {
-  fields: {
-    created_at?:  string
-    signal_type?: string
-    item_code?:   string
-  }
+  created_at?:  string
+  signal_type?: string
+  item_code?:   string
 }
 
 type CROSignal = {
-  fields: {
-    created_at?:   string
-    signal_type?:  string
-    page_url?:     string
-    session_count?: number
-  }
+  created_at?:   string
+  signal_type?:  string
+  page_url?:     string
+  session_count?: number
 }
 
 async function fetchOrders(since: string): Promise<{ paid: OrderRec[]; abandoned: OrderRec[] }> {
@@ -43,7 +37,7 @@ async function fetchOrders(since: string): Promise<{ paid: OrderRec[]; abandoned
       paid: paid as unknown as OrderRec[],
       // "abandoned" == still pending payment
       abandoned: pending.filter(
-        (o) => o.fields.payment_status === 'pending'
+        (o) => o.payment_status === 'pending'
       ) as unknown as OrderRec[],
     }
   } catch { return { paid: [], abandoned: [] } }
@@ -84,17 +78,17 @@ export async function GET(req: NextRequest) {
 
   // Average order value for paid orders
   const avgOrderValue = paid.length > 0
-    ? parseFloat((paid.reduce((s, o) => s + (o.fields.total ?? 0), 0) / paid.length).toFixed(3))
+    ? parseFloat((paid.reduce((s, o) => s + (o.total ?? 0), 0) / paid.length).toFixed(3))
     : 0
 
   // Signal breakdown from Nexa_Log
   const signalCounts: Record<string, number> = {}
   const productViews: Record<string, number> = {}
   for (const log of hayaLog) {
-    const type = log.fields.signal_type ?? 'unknown'
+    const type = log.signal_type ?? 'unknown'
     signalCounts[type] = (signalCounts[type] ?? 0) + 1
-    if (type === 'view' && log.fields.item_code) {
-      const code = log.fields.item_code
+    if (type === 'view' && log.item_code) {
+      const code = log.item_code
       productViews[code] = (productViews[code] ?? 0) + 1
     }
   }
@@ -107,8 +101,8 @@ export async function GET(req: NextRequest) {
   // CRO: top pages by session count
   const pageSessionMap: Record<string, number> = {}
   for (const sig of croSignals) {
-    const url = sig.fields.page_url ?? ''
-    if (url) pageSessionMap[url] = (pageSessionMap[url] ?? 0) + (sig.fields.session_count ?? 1)
+    const url = sig.page_url ?? ''
+    if (url) pageSessionMap[url] = (pageSessionMap[url] ?? 0) + (sig.session_count ?? 1)
   }
   const topCROPages = Object.entries(pageSessionMap)
     .sort((a, b) => b[1] - a[1])

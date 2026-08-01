@@ -20,7 +20,7 @@ export async function GET() {
     // Count item_code occurrences across all order items
     const counts: Record<string, number> = {}
     for (const order of orders) {
-      const fields = order.fields as OrderFields
+      const fields = order as OrderFields
       try {
         const items = typeof fields.items === 'string' ? JSON.parse(fields.items) : fields.items
         if (Array.isArray(items)) {
@@ -48,7 +48,7 @@ export async function GET() {
     const results: TopSeller[] = productRecords
       .map((r) => ({
         product: adaptAirtableProduct(r),
-        soldCount: counts[r.fields.item_code] ?? 0,
+        soldCount: counts[r.item_code] ?? 0,
       }))
       .sort((a, b) => b.soldCount - a.soldCount)
 

@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
         try {
           const order = await getOrderByOrderId(order_id)
           if (order) {
-            const f = order.fields
+            const f = order
             await fetch(webhookUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

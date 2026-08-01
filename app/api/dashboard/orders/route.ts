@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const records = (await getOrdersByPhone(phone)).slice(0, 50)
 
     const orders = records.map((r) => {
-      const f = r.fields as OrderFields
+      const f = r as OrderFields
       let items: unknown[] = []
       try { items = typeof f.items === 'string' ? JSON.parse(f.items) : f.items } catch {}
       return {

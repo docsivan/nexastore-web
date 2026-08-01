@@ -43,7 +43,7 @@ export async function getStoreContext(): Promise<StoreContext> {
     const promoLines: string[]   = []
 
     for (const r of records) {
-      const f     = r.fields
+      const f     = r
       const name  = String(f.name ?? '')
       const cat   = String(f.category ?? '')
       const price = f.final_price ? Number(f.final_price).toFixed(2) : 'N/A'
@@ -92,7 +92,7 @@ export async function getCustomerOrders(customerPhone: string): Promise<string> 
 
     return records
       .map(r => {
-        const f    = r.fields as unknown as Record<string, unknown>
+        const f    = r as unknown as Record<string, unknown>
         const date = f.created_at
           ? new Date(String(f.created_at)).toLocaleDateString('en-US')
           : 'Unknown date'

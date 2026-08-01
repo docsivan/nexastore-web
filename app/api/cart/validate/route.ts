@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
           return { ...item, valid: false, reason: 'Product not found' }
         }
 
-        const f = record.fields
+        const f = record
 
         if (!f.is_active) {
           return { ...item, valid: false, reason: 'Product is no longer available' }

@@ -30,7 +30,7 @@ async function handlePromotion(insight: HayaInsight) {
   const prodRecord = prodData.records?.[0]
   if (!prodRecord) return
 
-  const originalDiscount = Number(prodRecord.fields.discount_percent ?? 0)
+  const originalDiscount = Number(prodRecord.discount_percent ?? 0)
   const now     = new Date()
   const endsAt  = new Date(now.getTime() + 48 * 60 * 60 * 1000)
 
@@ -56,18 +56,18 @@ async function expirePromotions() {
   const todayStr = new Date().toISOString().split('T')[0]
   const data = await atList('Haya_Promotions', { limit: 50, match: { status: 'active' } })
   const due = (data.records ?? []).filter(
-    (r: { fields: { ends_at?: string } }) => String(r.fields.ends_at ?? '') < todayStr
+    (r: { ends_at?: string }) => String(r.ends_at ?? '') < todayStr
   )
 
-  for (const rec of due as Array<{ id: string; fields: { item_code?: string; original_discount?: number } }>) {
-    const itemCode = rec.fields.item_code
+  for (const rec of due as Array<{ item_code?: string; original_discount?: number } & { id: string }>) {
+    const itemCode = rec.item_code
     if (itemCode) {
       // Restore original discount and clear badge
       const prodData   = await atList('Products', { limit: 1, match: { item_code: itemCode } })
       const prodRecord = prodData.records?.[0]
       if (prodRecord) {
         await atPatch('Products', prodRecord.id, {
-          discount_percent: rec.fields.original_discount ?? 0,
+          discount_percent: rec.original_discount ?? 0,
           haya_badge:       '',
         })
       }
@@ -84,17 +84,17 @@ async function fetchHighPriorityInsights(): Promise<HayaInsight[]> {
     const data = await atList('Nexa_Insights', {
       limit: 20, orderBy: 'priority', match: { status: 'new' },
     })
-    return (data.records ?? []).map((r: { id: string; fields: Record<string, unknown> }) => ({
+    return (data.records ?? []).map((r: Record<string, unknown> & { id: string }) => ({
       id:              r.id,
-      insight_id:      String(r.fields.insight_id      ?? ''),
-      package:         String(r.fields.package         ?? ''),
-      insight_type:    String(r.fields.insight_type    ?? r.fields.package ?? ''),
-      insight:         String(r.fields.insight_text    ?? r.fields.insight ?? ''),
-      priority:        Number(r.fields.priority        ?? 0),
-      status:          String(r.fields.status          ?? ''),
-      action_required: String(r.fields.action_required ?? ''),
-      item_code:       r.fields.item_code   ? String(r.fields.item_code)   : undefined,
-      customer_id:     r.fields.customer_id ? String(r.fields.customer_id) : undefined,
+      insight_id:      String(r.insight_id      ?? ''),
+      package:         String(r.package         ?? ''),
+      insight_type:    String(r.insight_type    ?? r.package ?? ''),
+      insight:         String(r.insight_text    ?? r.insight ?? ''),
+      priority:        Number(r.priority        ?? 0),
+      status:          String(r.status          ?? ''),
+      action_required: String(r.action_required ?? ''),
+      item_code:       r.item_code   ? String(r.item_code)   : undefined,
+      customer_id:     r.customer_id ? String(r.customer_id) : undefined,
     })).filter((i) => i.priority >= 4)
   } catch {
     return []

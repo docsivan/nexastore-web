@@ -14,8 +14,8 @@ async function fetchAllActive(): Promise<Product[]> {
   const records = await getProducts()
   return records.map((r) => ({
     id:               r.id,
-    discount_percent: Number(r.fields.discount_percent ?? 0),
-    stock_quantity:   Number(r.fields.stock_quantity ?? 0),
+    discount_percent: Number(r.discount_percent ?? 0),
+    stock_quantity:   Number(r.stock_quantity ?? 0),
   }))
 }
 

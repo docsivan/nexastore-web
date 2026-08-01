@@ -1,7 +1,13 @@
-// ─── Generic Airtable record wrapper ─────────────────────────────────────────
-export interface AirtableRecord<T> {
-  id: string          // Airtable record ID  e.g. "recXXXXXXXXXXXXXX"
-  fields: T
+/**
+ * Row wrapper — now FLAT.
+ *
+ * This used to be Airtable's `{ id, fields: T }` envelope. Supabase returns
+ * flat rows, so the envelope is gone and columns sit at the top level.
+ * Making this type flat is deliberate: it turns every stale `.x`
+ * access into a compile error rather than a silent runtime failure.
+ */
+export type AirtableRecord<T> = T & {
+  id: string
   createdTime?: string
 }
 

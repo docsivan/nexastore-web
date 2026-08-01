@@ -28,11 +28,11 @@ async function getStaleContent() {
   if (!r) return null
   return {
     record_id: r.id,
-    content_id: String(r.fields.content_id ?? r.id),
-    title:      String(r.fields.title       ?? ''),
-    body:       String(r.fields.body        ?? ''),
-    category:   String(r.fields.category    ?? ''),
-    keywords:   String(r.fields.keywords    ?? ''),
+    content_id: String(r.content_id ?? r.id),
+    title:      String(r.title       ?? ''),
+    body:       String(r.body        ?? ''),
+    category:   String(r.category    ?? ''),
+    keywords:   String(r.keywords    ?? ''),
   }
 }
 

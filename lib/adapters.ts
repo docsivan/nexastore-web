@@ -22,7 +22,7 @@ function resolveImage(image_url: string, product_page_url: string, name: string)
  * consumed by all existing UI components and the cart system.
  */
 export function adaptAirtableProduct(ap: AirtableProduct): Product {
-  const f = ap.fields as ProductFields & Record<string, unknown>
+  const f = ap as unknown as ProductFields & Record<string, unknown>
   // Airtable single-select fields can return { name: "value" } at runtime
   const rawCat = (typeof f.category === 'object' && f.category !== null
     ? (f.category as { name?: string }).name ?? String(f.category)

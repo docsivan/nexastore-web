@@ -91,19 +91,19 @@ function toColumns(fields: Record<string, unknown>, table: string): Record<strin
   return out
 }
 
-/** columns (Supabase) -> fields (Airtable naming), plus the id envelope. */
+/** columns (Supabase) -> caller-facing names. Rows stay FLAT (Z-005). */
 function toRecord(row: Record<string, any>, table: string) {
   const rev = reverseAliasesFor(table)
   const { id, ...rest } = row
-  const fields: Record<string, unknown> = {}
+  const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(rest)) {
-    fields[rev[k] ?? k] = v
+    out[rev[k] ?? k] = v
   }
   // Callers JSON.parse orders.items
-  if (fields.items !== undefined && typeof fields.items !== 'string') {
-    fields.items = JSON.stringify(fields.items ?? [])
+  if (out.items !== undefined && typeof out.items !== 'string') {
+    out.items = JSON.stringify(out.items ?? [])
   }
-  return { id: String(id), fields, createdTime: row.created_at ?? undefined }
+  return { ...out, id: String(id), createdTime: row.created_at ?? undefined } as any
 }
 
 export interface AtListOptions {
@@ -122,7 +122,7 @@ export interface AtListOptions {
 export async function atList(
   table: string,
   opts: AtListOptions = {}
-): Promise<{ records: Array<{ id: string; fields: any; createdTime?: string }> }> {
+): Promise<{ records: any[] }> {
   const { orderBy = 'created_at', since, ascending = false, limit = 500, match, compare } = opts
 
   const run = async (withOrder: boolean) => {
@@ -182,7 +182,7 @@ export async function atList(
  */
 export async function atGetPath(
   path: string
-): Promise<{ records: Array<{ id: string; fields: any; createdTime?: string }> }> {
+): Promise<{ records: any[] }> {
   const [rawTable, rawQuery = ''] = path.replace(/^\//, '').split('?')
   const table = decodeURIComponent(rawTable)
   const params = new URLSearchParams(rawQuery)
@@ -250,7 +250,7 @@ export async function atGetPath(
 export async function atGetOne(
   table: string,
   id: string
-): Promise<{ id: string; fields: any; createdTime?: string } | null> {
+): Promise<any | null> {
   try {
     const { data, error } = await supabase
       .from(resolveTable(table))
@@ -269,7 +269,7 @@ export async function atGetOne(
 export async function atCreate(
   table: string,
   fields: Record<string, unknown>
-): Promise<{ id: string; fields: any } | null> {
+): Promise<any | null> {
   try {
     const { data, error } = await supabase
       .from(resolveTable(table))
@@ -329,7 +329,7 @@ export async function atPatchMany(
 ): Promise<number> {
   let updated = 0
   for (const r of records) {
-    if (await atPatch(table, r.id, r.fields)) updated++
+    if (await atPatch(table, r.id, r.fields as Record<string, unknown>)) updated++
   }
   return updated
 }

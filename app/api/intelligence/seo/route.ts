@@ -9,44 +9,36 @@ function checkAuth(req: NextRequest) {
 }
 
 type HayaSEORec = {
-  fields: {
-    item_code?:        string
-    slug?:             string
-    meta_title?:       string
-    meta_description?: string
-    keywords?:         string
-    schema_json?:      string
-    internal_links?:   string
-    created_at?:       string
-  }
+  item_code?:        string
+  slug?:             string
+  meta_title?:       string
+  meta_description?: string
+  keywords?:         string
+  schema_json?:      string
+  internal_links?:   string
+  created_at?:       string
 }
 
 type HayaInsightRec = {
-  fields: {
-    insight_type?: string
-    insight_text?: string
-    priority?:     string
-    status?:       string
-    created_at?:   string
-  }
+  insight_type?: string
+  insight_text?: string
+  priority?:     string
+  status?:       string
+  created_at?:   string
 }
 
 type GSCRec = {
-  fields: {
-    query?:       string
-    clicks?:      number
-    impressions?: number
-    position?:    number
-    created_at?:  string
-  }
+  query?:       string
+  clicks?:      number
+  impressions?: number
+  position?:    number
+  created_at?:  string
 }
 
 type TrendRec = {
-  fields: {
-    keyword?:    string
-    trend_score?: number
-    created_at?: string
-  }
+  keyword?:    string
+  trend_score?: number
+  created_at?: string
 }
 
 async function fetchHayaSEO(): Promise<HayaSEORec[]> {
@@ -91,29 +83,29 @@ export async function GET(req: NextRequest) {
 
   // SEO coverage
   const totalSEO        = seoRecords.length
-  const withSchema      = seoRecords.filter(r => !!r.fields.schema_json).length
-  const withDescription = seoRecords.filter(r => (r.fields.meta_description ?? '').length > 50).length
-  const withKeywords    = seoRecords.filter(r => !!r.fields.keywords).length
-  const withInternalLinks = seoRecords.filter(r => !!r.fields.internal_links).length
+  const withSchema      = seoRecords.filter(r => !!r.schema_json).length
+  const withDescription = seoRecords.filter(r => (r.meta_description ?? '').length > 50).length
+  const withKeywords    = seoRecords.filter(r => !!r.keywords).length
+  const withInternalLinks = seoRecords.filter(r => !!r.internal_links).length
 
   // Top GSC queries by impressions
   const topQueries = gscRecords.slice(0, 10).map(r => ({
-    query:       r.fields.query ?? '',
-    clicks:      r.fields.clicks ?? 0,
-    impressions: r.fields.impressions ?? 0,
-    position:    r.fields.position ?? 0,
+    query:       r.query ?? '',
+    clicks:      r.clicks ?? 0,
+    impressions: r.impressions ?? 0,
+    position:    r.position ?? 0,
   }))
 
   // Low CTR opportunities (position ≤ 10, clicks low relative to impressions)
   const lowCTR = gscRecords
-    .filter(r => (r.fields.position ?? 99) <= 10 && (r.fields.impressions ?? 0) > 50)
+    .filter(r => (r.position ?? 99) <= 10 && (r.impressions ?? 0) > 50)
     .map(r => ({
-      query:       r.fields.query ?? '',
-      clicks:      r.fields.clicks ?? 0,
-      impressions: r.fields.impressions ?? 0,
-      position:    r.fields.position ?? 0,
-      ctr_pct:     r.fields.impressions
-        ? parseFloat(((r.fields.clicks ?? 0) / r.fields.impressions * 100).toFixed(1))
+      query:       r.query ?? '',
+      clicks:      r.clicks ?? 0,
+      impressions: r.impressions ?? 0,
+      position:    r.position ?? 0,
+      ctr_pct:     r.impressions
+        ? parseFloat(((r.clicks ?? 0) / r.impressions * 100).toFixed(1))
         : 0,
     }))
     .sort((a, b) => a.ctr_pct - b.ctr_pct)
@@ -121,16 +113,16 @@ export async function GET(req: NextRequest) {
 
   // Top trending keywords
   const topTrends = trendRecords.slice(0, 10).map(r => ({
-    keyword:     r.fields.keyword ?? '',
-    trend_score: r.fields.trend_score ?? 0,
+    keyword:     r.keyword ?? '',
+    trend_score: r.trend_score ?? 0,
   }))
 
   // Recent CRO insights
   const recentInsights = insights.slice(0, 5).map(r => ({
-    insight_text: r.fields.insight_text ?? '',
-    priority:     r.fields.priority ?? '',
-    status:       r.fields.status ?? '',
-    created_at:   r.fields.created_at ?? '',
+    insight_text: r.insight_text ?? '',
+    priority:     r.priority ?? '',
+    status:       r.status ?? '',
+    created_at:   r.created_at ?? '',
   }))
 
   const response = NextResponse.json({

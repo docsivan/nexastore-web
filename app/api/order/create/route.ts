@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success:         true,
-        order_id:        order.fields.order_id,
+        order_id:        order.order_id,
         airtable_id:     order.id,
         customer_id:     customer.id,
         delivery_charge,

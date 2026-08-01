@@ -17,11 +17,11 @@ async function fetchAllActive(): Promise<Product[]> {
   const records = await getProducts()
   return records.map((r) => ({
     id:               r.id,
-    category:         String(r.fields.category ?? ''),
-    discount_percent: Number(r.fields.discount_percent ?? 0),
-    stock_quantity:   Number(r.fields.stock_quantity ?? 0),
-    haya_featured:    Boolean(r.fields.haya_featured ?? false),
-    haya_badge:       String(r.fields.haya_badge ?? ''),
+    category:         String(r.category ?? ''),
+    discount_percent: Number(r.discount_percent ?? 0),
+    stock_quantity:   Number(r.stock_quantity ?? 0),
+    haya_featured:    Boolean(r.haya_featured ?? false),
+    haya_badge:       String(r.haya_badge ?? ''),
   }))
 }
 

@@ -13,7 +13,7 @@ export async function GET() {
       supabaseUrl,
       hasServiceKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
       recordCount:   records.length,
-      firstProduct:  records[0]?.fields?.name ?? 'none',
+      firstProduct:  records[0]?.name ?? 'none',
       error:         null,
     })
   } catch (e) {

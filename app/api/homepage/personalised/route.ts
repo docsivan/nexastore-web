@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     // Count category occurrences
     const catCounts: Record<string, number> = {}
     for (const order of orders) {
-      const f = order.fields as OrderFields
+      const f = order as OrderFields
       try {
         const items = typeof f.items === 'string' ? JSON.parse(f.items) : f.items
         if (Array.isArray(items)) {

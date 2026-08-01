@@ -18,7 +18,7 @@ export async function GET(
     const record = await getOrderByOrderId(order_id)
     if (!record) return new NextResponse('Not found', { status: 404 })
 
-    const f = record.fields as OrderFields
+    const f = record as OrderFields
 
     let items: OrderItem[] = []
     try { items = typeof f.items === 'string' ? JSON.parse(f.items) : f.items } catch {}

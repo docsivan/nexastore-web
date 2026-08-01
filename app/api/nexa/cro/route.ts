@@ -28,11 +28,11 @@ async function fetchCROSignals() {
   const data = await atGet(
     `/Nexa_CRO?filterByFormula=${formula}&maxRecords=100&sort[0][field]=session_count&sort[0][direction]=desc`
   )
-  return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-    page_url:     String(r.fields.page_url     ?? ''),
-    signal_type:  String(r.fields.signal_type  ?? ''),
-    session_count: Number(r.fields.session_count ?? 0),
-    created_at:   String(r.fields.created_at   ?? ''),
+  return (data.records ?? []).map((r: Record<string, unknown>) => ({
+    page_url:     String(r.page_url     ?? ''),
+    signal_type:  String(r.signal_type  ?? ''),
+    session_count: Number(r.session_count ?? 0),
+    created_at:   String(r.created_at   ?? ''),
   }))
 }
 
@@ -43,8 +43,8 @@ async function fetchAbandonSignals() {
   )
   // Group by page_url
   const grouped: Record<string, number> = {}
-  for (const r of (data.records ?? []) as Array<{ fields: Record<string, unknown> }>) {
-    const url = String(r.fields.page_url ?? r.fields.value ?? 'unknown')
+  for (const r of (data.records ?? []) as Array<Record<string, unknown>>) {
+    const url = String(r.page_url ?? r.value ?? 'unknown')
     grouped[url] = (grouped[url] ?? 0) + 1
   }
   return Object.entries(grouped).map(([page_url, count]) => ({ page_url, count }))
@@ -56,8 +56,8 @@ async function fetchConversionRates() {
     `/Haya_Memory?filterByFormula=${formula}&maxRecords=100`
   )
   const viewsByCode: Record<string, number> = {}
-  for (const r of (data.records ?? []) as Array<{ fields: Record<string, unknown> }>) {
-    const code = String(r.fields.item_code ?? '')
+  for (const r of (data.records ?? []) as Array<Record<string, unknown>>) {
+    const code = String(r.item_code ?? '')
     if (code) viewsByCode[code] = (viewsByCode[code] ?? 0) + 1
   }
   return viewsByCode
@@ -81,7 +81,7 @@ async function rewriteProductDescription(itemCode: string): Promise<string | nul
   const record = data.records?.[0]
   if (!record) return null
 
-  const { name, description, category } = record.fields as Record<string, string>
+  const { name, description, category } = record as Record<string, string>
   const storeCtx = await getStoreContext()
   const newDesc = await callSonnet(
     `Rewrite this product description to be more conversion-optimised. Focus on product benefits and professional use. Max 200 words.\n\nProduct: ${name}\nCategory: ${category}\nCurrent description: ${description ?? '(none)'}`,

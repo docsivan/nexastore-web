@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const records = await getProductsByStock(200)
 
     const products = records.map((r) => {
-      const f = r.fields as ProductFields
+      const f = r as ProductFields
       return {
         // record_id is the Supabase row id; PATCH below expects it back
         record_id:      r.id,

@@ -11,10 +11,10 @@ async function getRelatedGuides(category: string): Promise<Array<{ title: string
   try {
     const formula = encodeURIComponent(`AND({status}="published",{category}="${category}")`)
     const data = await atGetPath(`/Haya_Content?filterByFormula=${formula}&maxRecords=4`)
-    return (data.records ?? []).map((r: { fields: Record<string, unknown> }) => ({
-      title: String(r.fields.title       ?? ''),
-      slug:  String(r.fields.content_id  ?? ''),
-      tier:  String(r.fields.content_tier ?? ''),
+    return (data.records ?? []).map((r: Record<string, unknown>) => ({
+      title: String(r.title       ?? ''),
+      slug:  String(r.content_id  ?? ''),
+      tier:  String(r.content_tier ?? ''),
     }))
   } catch { return [] }
 }

@@ -12,12 +12,10 @@ function startOf(d: Date) { const c = new Date(d); c.setHours(0,0,0,0); return c
 function isoDate(d: Date)  { return d.toISOString() }
 
 type OrderRec = {
-  fields: {
-    created_at?: string
-    total?:      number
-    items?:      string
-    payment_status?: string
-  }
+  created_at?: string
+  total?:      number
+  items?:      string
+  payment_status?: string
 }
 
 type ItemLine = {
@@ -38,7 +36,7 @@ async function fetchProductCategories(): Promise<Record<string, string>> {
   try {
     const map: Record<string, string> = {}
     for (const r of await getAllProducts()) {
-      if (r.fields.item_code) map[r.fields.item_code] = r.fields.category ?? 'Other'
+      if (r.item_code) map[r.item_code] = r.category ?? 'Other'
     }
     return map
   } catch { return {} }
@@ -49,7 +47,7 @@ function parseItems(json: string): ItemLine[] {
 }
 
 function sumOrders(orders: OrderRec[]) {
-  return orders.reduce((s, o) => s + (o.fields.total ?? 0), 0)
+  return orders.reduce((s, o) => s + (o.total ?? 0), 0)
 }
 
 export async function GET(req: NextRequest) {
@@ -67,20 +65,20 @@ export async function GET(req: NextRequest) {
     // last month: fetch since lastMoStart, then bound to before lastMoEnd
     (async () => {
       const rows = await fetchOrdersSince(lastMoStart)
-      return rows.filter(o => (o.fields.created_at ?? '') < lastMoEnd)
+      return rows.filter(o => (o.created_at ?? '') < lastMoEnd)
     })(),
     fetchProductCategories(),
   ])
 
-  const todayOrders  = monthOrders.filter(o => (o.fields.created_at ?? '') >= todayStart)
-  const weekOrders   = monthOrders.filter(o => (o.fields.created_at ?? '') >= weekStart)
+  const todayOrders  = monthOrders.filter(o => (o.created_at ?? '') >= todayStart)
+  const weekOrders   = monthOrders.filter(o => (o.created_at ?? '') >= weekStart)
 
   // Revenue by category this month
   const catRevenue: Record<string, number> = {}
   const productRevenue: Record<string, { name: string; revenue: number }> = {}
 
   for (const order of monthOrders) {
-    for (const item of parseItems(order.fields.items ?? '[]')) {
+    for (const item of parseItems(order.items ?? '[]')) {
       const code = item.item_code ?? ''
       const cat  = catMap[code] ?? item.category ?? 'Other'
       const rev  = (item.final_price ?? 0) * (item.quantity ?? 1)

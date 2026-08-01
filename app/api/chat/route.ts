@@ -112,16 +112,16 @@ export async function POST(req: NextRequest) {
     const systemPrompt   = buildSystemPrompt(storeContext, customerOrders)
 
     // Fetch live product list for SKU validation and product card rendering
-    let allProducts: Array<{ fields: Record<string, unknown> }> = []
+    let allProducts: Array<Record<string, unknown>> = []
     let validSkus:   string[] = []
 
     if (intent === 'product_query' || intent === 'order_build') {
       try {
         const records = await getProducts()
-        allProducts   = (records as unknown as Array<{ fields: Record<string, unknown> }>)
-          .filter(r => r.fields?.is_active)
+        allProducts   = (records as unknown as Array<Record<string, unknown>>)
+          .filter(r => r?.is_active)
         validSkus     = allProducts
-          .map(r => String(r.fields?.item_code))
+          .map(r => String(r?.item_code))
           .filter(Boolean)
       } catch (err) {
         console.error('Product fetch:', err)
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       .filter(sku => validSkus.includes(sku))
 
     const matchedProducts = allProducts
-      .filter(r => mentionedSkus.includes(String(r.fields?.item_code)))
+      .filter(r => mentionedSkus.includes(String(r?.item_code)))
       .slice(0, 4)
       .map(r => adaptAirtableProduct(r as unknown as Parameters<typeof adaptAirtableProduct>[0]))
 
