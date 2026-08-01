@@ -5,6 +5,11 @@
  * Handles 8 tables. Every column that is renamed or dropped is logged, so the
  * mapping decisions are auditable rather than buried in code.
  *
+ * ⚠️ NOT fully idempotent. orders/customers/admin_users/store_config upsert on
+ * a unique key and are safe to re-run. disclaimers, haya_social, haya_waitlist
+ * and haya_conversations have no unique constraint, so re-running INSERTS
+ * DUPLICATES — clear those tables first, or add unique keys, before re-running.
+ *
  * Not migrated, by instruction: Products (already live), Banners, Haya_Cron_Log.
  */
 
