@@ -122,15 +122,33 @@ export async function atList(
   opts: AtListOptions = {}
 ): Promise<{ records: Array<{ id: string; fields: any; createdTime?: string }> }> {
   const { orderBy = 'created_at', since, ascending = false, limit = 500, match } = opts
-  try {
+
+  const run = async (withOrder: boolean) => {
     let q = supabase.from(resolveTable(table)).select('*')
     if (match) {
       for (const [k, v] of Object.entries(match)) {
         q = q.eq(aliasesFor(table)[k] ?? k, v as any)
       }
     }
-    if (since) q = q.gte(orderBy, since)
-    const { data, error } = await q.order(orderBy, { ascending }).limit(limit)
+    if (withOrder && since) q = q.gte(orderBy, since)
+    if (withOrder) q = q.order(orderBy, { ascending })
+    return q.limit(limit)
+  }
+
+  try {
+    let { data, error } = await run(true)
+
+    // 42703 = undefined_column. Not every table has the default `created_at`
+    // sort key, and an unsortable column should degrade to unsorted rather
+    // than silently returning zero rows — an empty result here previously
+    // cascaded into duplicate-key errors downstream.
+    if (error && (error as { code?: string }).code === '42703') {
+      console.warn(
+        `[ai-tables] ${table}: no sortable column "${orderBy}" — retrying unordered`
+      )
+      ;({ data, error } = await run(false))
+    }
+
     if (error) throw error
     return { records: (data ?? []).map((r) => toRecord(r, table)) }
   } catch (e) {
