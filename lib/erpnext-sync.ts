@@ -36,14 +36,6 @@ const ERP_CUSTOMER_GROUP = process.env.ERPNEXT_CUSTOMER_GROUP || 'Commercial'
 const ERP_TERRITORY      = process.env.ERPNEXT_TERRITORY || 'Oman'
 const ERP_ITEM_GROUP     = process.env.ERPNEXT_ITEM_GROUP || 'Products'
 
-/**
- * The Zevio ERPNext instance has the India Compliance app installed, which
- * makes gst_hsn_code mandatory on Item. Zevio's company is Oman-based, so HSN
- * is not actually applicable — the correct fix is to remove that app in
- * ERPNext. Until then this env var lets item creation succeed. Left unset by
- * default: an HSN code is a tax classification and should not be guessed.
- */
-const ERP_HSN_CODE = process.env.ERPNEXT_HSN_CODE
 
 /** Source warehouse for stock items on a Sales Order. 'Stores - ZV' exists on
  *  the Zevio instance; the suffix is the company abbreviation. */
@@ -106,7 +98,6 @@ async function ensureERPItem(item: ZevioOrderItem) {
     stock_uom:     'Nos',
     is_stock_item: 1,
     standard_rate: Number(item.final_price ?? 0),
-    ...(ERP_HSN_CODE ? { gst_hsn_code: ERP_HSN_CODE } : {}),
   })
 }
 
