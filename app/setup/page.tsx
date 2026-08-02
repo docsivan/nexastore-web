@@ -91,17 +91,18 @@ export default function SetupPage() {
             Your business is coming alive
           </h1>
           <p className="text-slate-300 mb-2">
-            We are setting up your complete Zevio stack.
+            Thank you — your Zevio setup request is with our team.
           </p>
           <p className="text-slate-300 mb-8">
-            Check your email at <strong className="text-white">{form.email}</strong> —
-            your store will be ready in about 10 minutes.
+            We have received your details and will be in touch within 24 hours to
+            set up your store. We will email{' '}
+            <strong className="text-white">{form.email}</strong>.
           </p>
           <div className="bg-slate-700 rounded-2xl p-6 text-left space-y-3">
-            <p className="text-slate-300 text-sm">✅ Your store is being created</p>
-            <p className="text-slate-300 text-sm">✅ Your ERP is being configured</p>
-            <p className="text-slate-300 text-sm">✅ Your AI assistant is being trained</p>
-            <p className="text-slate-300 text-sm">⏳ Welcome email on its way...</p>
+            <p className="text-slate-300 text-sm">📋 Your details have been received</p>
+            <p className="text-slate-300 text-sm">📋 Our team will configure your store</p>
+            <p className="text-slate-300 text-sm">📋 Your AI assistant will be ready on launch</p>
+            <p className="text-slate-300 text-sm">📧 Check your inbox for next steps</p>
           </div>
           <p className="text-slate-500 text-xs mt-8">
             Powered by Zevio · Your business, alive.

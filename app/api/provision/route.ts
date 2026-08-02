@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { writeLog } from '@/lib/supabase'
+import { supabase, writeLog } from '@/lib/supabase'
+import { sendMail } from '@/lib/mailer'
+import { waitUntil } from '@vercel/functions'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,10 +20,13 @@ export const dynamic = 'force-dynamic'
  *   ai_log        — the complete payload as JSON, since industry / plan /
  *                   business_name / country / currency have no columns yet
  *
- * The portal's success screen currently promises the store will be ready in
- * ~10 minutes. That promise is NOT yet backed by anything — see the note in
- * the Z-005 handover before putting this in front of real customers.
+ * It also emails SIGNUP_NOTIFY_EMAIL so a human knows a signup happened while
+ * provisioning is still manual. The portal copy was softened to match what
+ * this actually does — no automated-setup promises.
  */
+
+/** Where new-signup alerts go. */
+const NOTIFY_EMAIL = process.env.SIGNUP_NOTIFY_EMAIL || 'docsivan@gmail.com'
 
 interface ProvisionRequest {
   industry?: string
@@ -77,6 +81,16 @@ export async function POST(req: NextRequest) {
       status:       'captured',
     })
 
+    // Notify the team. Non-blocking — a mail outage must not fail the signup,
+    // and the lead is already persisted above. waitUntil, not a bare promise:
+    // on serverless the invocation freezes once the response is returned, so
+    // fire-and-forget silently never runs.
+    waitUntil(sendMail({
+      to: NOTIFY_EMAIL,
+      subject: `New Zevio signup — ${body.business_name || name}`,
+      html: signupNotificationHtml({ ...body, name, email }),
+    }).catch((e) => console.error('[provision] notification email failed:', e)))
+
     return NextResponse.json({ success: true, captured: true })
   } catch (e) {
     console.error('[provision]', e)
@@ -85,4 +99,29 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/** Plain, readable summary of a Setup Portal submission. */
+function signupNotificationHtml(d: ProvisionRequest): string {
+  const row = (label: string, value?: string) =>
+    value ? `<tr><td style="padding:6px 14px 6px 0;color:#6b7280">${label}</td><td style="padding:6px 0"><strong>${value}</strong></td></tr>` : ''
+  return `<!DOCTYPE html>
+<html><body style="font-family:-apple-system,Segoe UI,Arial,sans-serif;color:#111">
+  <h2 style="margin:0 0 4px">New Zevio signup</h2>
+  <p style="margin:0 0 18px;color:#6b7280;font-size:13px">Submitted via the Setup Portal at /setup</p>
+  <table style="border-collapse:collapse;font-size:14px">
+    ${row('Business', d.business_name)}
+    ${row('Contact', d.name)}
+    ${row('Email', d.email)}
+    ${row('Phone', d.phone)}
+    ${row('Industry', d.industry)}
+    ${row('Country', d.country)}
+    ${row('Currency', d.currency)}
+    ${row('Plan', d.plan)}
+  </table>
+  <p style="margin:22px 0 0;padding:12px 14px;background:#fff7ed;border-left:3px solid #f59e0b;font-size:13px;color:#92400e">
+    Provisioning is still manual — nothing has been created automatically.
+    The customer was told the team will be in touch within 24 hours.
+  </p>
+</body></html>`
 }
